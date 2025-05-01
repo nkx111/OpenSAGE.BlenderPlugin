@@ -1,6 +1,6 @@
 # Version History
 
-## v0.7.2 (28.09.24)
+## v0.7.2 (01.05.25)
 
 * adapt to API changes in Blender 4.2+
 * adapt to API changes in Blender 4.4+
