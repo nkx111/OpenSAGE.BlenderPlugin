@@ -3,6 +3,7 @@
 ## v0.7.2 (28.09.24)
 
 * adapt to API changes in Blender 4.2+
+* adapt to API changes in Blender 4.4+
 
 ## v0.7.1 (29.01.24)
 
