@@ -59,6 +59,15 @@ class ShaderMaterialProperty:
 
     def to_rgba(self):
         return self.value.x, self.value.y, self.value.z, self.value.w if len(self.value) > 3 else 1.0
+    
+    def to_property(self):
+        if self.type == VEC2_PROPERTY:
+            return self.value.xy
+        elif self.type == VEC3_PROPERTY:
+            return self.to_rgb()
+        elif self.type == VEC4_PROPERTY:
+            return self.to_rgba()
+        return self.value
 
     @staticmethod
     def read(context, io_stream):

@@ -137,13 +137,62 @@ def find_texture(context, file, name=None):
     if img is None:
         context.warning(
             f'texture not found: {filepath} {extensions}. Make sure it is right next to the file you are importing!')
-        img = bpy.data.images.new(name, width=2048, height=2048)
+        if "IMG_NOT_FOUND" in bpy.data.images:
+            return bpy.data.images["IMG_NOT_FOUND"]
+        img = bpy.data.images.new("IMG_NOT_FOUND", width=2048, height=2048)
         img.generated_type = 'COLOR_GRID'
         img.source = 'GENERATED'
-        img.name = name + extensions[0]
 
     img.alpha_mode = 'STRAIGHT'
     return img
+
+def find_texture_from_path(path, file):
+    pure_name = file.rsplit('.', 1)[0]
+
+    for extension in extensions:
+        combined = pure_name + extension
+        if combined in bpy.data.images:
+            return bpy.data.images[combined]
+
+    filepath = path + os.path.sep + pure_name
+
+    img = None
+    for extension in extensions:
+        img = load_image(filepath + extension, check_existing=True)
+        if img is not None:
+            print('loaded texture: ' + filepath + extension)
+            img.name = pure_name
+            break
+
+    if img is None:
+        print(f'texture not found: {filepath} {extensions}. Make sure it is right next to the file you are importing!')
+        if "IMG_NOT_FOUND" in bpy.data.images:
+            return bpy.data.images["IMG_NOT_FOUND"]
+        img = bpy.data.images.new("IMG_NOT_FOUND", width=2048, height=2048)
+        img.generated_type = 'COLOR_GRID'
+        img.source = 'GENERATED'
+
+    img.alpha_mode = 'STRAIGHT'
+    return img
+
+def create_texture_node(material, path, file):
+    img = find_texture_from_path(path, file)
+    for node in material.node_tree.nodes:
+        if node.type == 'TEX_IMAGE' and node.image == img:
+            print(f"复用现有节点: {node.name}, 纹理: {img.name}")
+            return node
+    node = material.node_tree.nodes.new("ShaderNodeTexImage")
+    node.image = img
+    return node
+
+def create_node_no_repeative(material, type, name):
+    for node in material.node_tree.nodes:
+        if node.name == name:
+            print(f"Reusing existing node: {node.name}")
+            return node
+    new_node = material.node_tree.nodes.new(type)
+    new_node.name = name
+    return new_node
 
 
 def get_aa_box(vertices):
