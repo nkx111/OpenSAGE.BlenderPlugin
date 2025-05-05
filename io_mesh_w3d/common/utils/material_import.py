@@ -7,6 +7,7 @@ from bpy_extras import node_shader_utils
 
 from io_mesh_w3d.common.utils.helpers import *
 from io_mesh_w3d.w3d.structs.mesh_structs.vertex_material import *
+from io_mesh_w3d.custom_properties import *
 
 
 ##########################################################################
@@ -133,117 +134,27 @@ def create_material_from_shader_material(context, name, shader_mat):
         material = bpy.data.materials[name]
         principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=False)
         return material, principled
-
+    
     material = bpy.data.materials.new(name)
-    material.material_type = 'SHADER_MATERIAL'
+    material_type = str(shader_mat.header.type_name).split('.')[0]
+    material.material_type = 'DefaultW3D'
+    for key in material_parameter_map.keys():
+        if str.upper(material_type) == str.upper(key):
+            material.material_type = key
+    material.texture_path = os.path.dirname(context.filepath)
     material.use_nodes = True
     material.show_transparent_back = False
-
     material.technique = shader_mat.header.technique
 
     principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=False)
 
+    para_map = material_parameter_map[material.material_type]
     for prop in shader_mat.properties:
-        if prop.name == 'DiffuseTexture' and prop.value != '':
-            principled.base_color_texture.image = find_texture(context, prop.value)
-            principled.base_color_texture.image.name = prop.value
-        elif prop.name == 'NormalMap' and prop.value != '':
-            principled.normalmap_texture.image = find_texture(context, prop.value)
-            principled.normalmap_texture.image.name = prop.value
-        elif prop.name == 'BumpScale':
-            principled.normalmap_strength = prop.value
-        elif prop.name == 'SpecMap' and prop.value != '':
-            principled.specular_texture.image = find_texture(context, prop.value)
-            principled.specular_texture.image.name = prop.value
-        elif prop.name == 'SpecularExponent' or prop.name == 'Shininess':
-            material.specular_intensity = prop.value / 200.0
-        elif prop.name == 'DiffuseColor' or prop.name == 'ColorDiffuse':
-            material.diffuse_color = prop.to_rgba()
-        elif prop.name == 'SpecularColor' or prop.name == 'ColorSpecular':
-            material.specular_color = prop.to_rgb()
-        elif prop.name == 'CullingEnable':
-            material.use_backface_culling = prop.value
-        elif prop.name == 'Texture_0':
-            principled.base_color_texture.image = find_texture(context, prop.value)
-            principled.base_color_texture.image.name = prop.value
-
-        # all props below have no effect on shading -> custom properties for roundtrip purpose
-        elif prop.name == 'AmbientColor' or prop.name == 'ColorAmbient':
-            material.ambient = prop.to_rgba()
-        elif prop.name == 'EmissiveColor' or prop.name == 'ColorEmissive':
-            principled.emission_color = prop.to_rgb()
-        elif prop.name == 'Opacity':
-            principled.alpha = prop.value
-        elif prop.name == 'AlphaTestEnable':
-            material.alpha_test = prop.value
-        elif prop.name == 'BlendMode':  # is blend_method ?
-            material.blend_mode = prop.value
-        elif prop.name == 'BumpUVScale':
-            material.bump_uv_scale = prop.value.xy
-        elif prop.name == 'EdgeFadeOut':
-            material.edge_fade_out = prop.value
-        elif prop.name == 'DepthWriteEnable':
-            material.depth_write = prop.value
-        elif prop.name == 'Sampler_ClampU_ClampV_NoMip_0':
-            material.sampler_clamp_uv_no_mip_0 = prop.value
-        elif prop.name == 'Sampler_ClampU_ClampV_NoMip_1':
-            material.sampler_clamp_uv_no_mip_1 = prop.value
-        elif prop.name == 'NumTextures':
-            material.num_textures = prop.value  # is 1 if texture_0 and texture_1 are set
-        elif prop.name == 'Texture_1':  # second diffuse texture
-            # find texture just load the texture in blender
-            # multiple diffuse textures still need to be switched by hand by the user
-            find_texture(context, prop.value)
-            material.texture_1 = prop.value
-        elif prop.name == 'DamagedTexture':
-            find_texture(context, prop.value)
-            material.damaged_texture = prop.value
-        elif prop.name == 'SecondaryTextureBlendMode':
-            material.secondary_texture_blend_mode = prop.value
-        elif prop.name == 'TexCoordMapper_0':
-            material.tex_coord_mapper_0 = prop.value
-        elif prop.name == 'TexCoordMapper_1':
-            material.tex_coord_mapper_1 = prop.value
-        elif prop.name == 'TexCoordTransform_0':
-            material.tex_coord_transform_0 = prop.value
-        elif prop.name == 'TexCoordTransform_1':
-            material.tex_coord_transform_1 = prop.value
-        elif prop.name == 'EnvironmentTexture':
-            material.environment_texture = prop.value
-        elif prop.name == 'EnvMult':
-            material.environment_mult = prop.value
-        elif prop.name == 'RecolorTexture':
-            material.recolor_texture = prop.value
-        elif prop.name == 'RecolorMultiplier':
-            material.recolor_mult = prop.value
-        elif prop.name == 'UseRecolorColors':
-            material.use_recolor = prop.value
-        elif prop.name == 'HouseColorPulse':
-            material.house_color_pulse = prop.value
-        elif prop.name == 'ScrollingMaskTexture':
-            material.scrolling_mask_texture = prop.value
-        elif prop.name == 'TexCoordTransformAngle_0':
-            material.tex_coord_transform_angle = prop.value
-        elif prop.name == 'TexCoordTransformU_0':
-            material.tex_coord_transform_u_0 = prop.value
-        elif prop.name == 'TexCoordTransformV_0':
-            material.tex_coord_transform_v_0 = prop.value
-        elif prop.name == 'TexCoordTransformU_1':
-            material.tex_coord_transform_u_1 = prop.value
-        elif prop.name == 'TexCoordTransformV_1':
-            material.tex_coord_transform_v_1 = prop.value
-        elif prop.name == 'TexCoordTransformU_2':
-            material.tex_coord_transform_u_2 = prop.value
-        elif prop.name == 'TexCoordTransformV_2':
-            material.tex_coord_transform_v_2 = prop.value
-        elif prop.name == 'TextureAnimation_FPS_NumPerRow_LastFrame_FrameOffset_0':
-            material.tex_ani_fps_NPR_lastFrame_frameOffset_0 = prop.value
-        elif prop.name == 'IonHullTexture':
-            material.ion_hull_texture = prop.value
-        elif prop.name == 'MultiTextureEnable':
-            material.multi_texture_enable = prop.value
+        if prop.name in para_map:
+            property_name_bpy = para_map[prop.name]
+            setattr(material, property_name_bpy, prop.to_property())
         else:
-            context.error('shader property not implemented: ' + prop.name)
+            context.error('shader property not in list: ' + prop.name)
 
     return material, principled
 

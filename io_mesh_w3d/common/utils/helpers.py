@@ -146,7 +146,7 @@ def find_texture(context, file, name=None):
     img.alpha_mode = 'STRAIGHT'
     return img
 
-def find_texture_from_path(path, file):
+def find_texture_from_path(path_list, file):
     pure_name = file.rsplit('.', 1)[0]
 
     for extension in extensions:
@@ -154,14 +154,16 @@ def find_texture_from_path(path, file):
         if combined in bpy.data.images:
             return bpy.data.images[combined]
 
-    filepath = path + os.path.sep + pure_name
-
     img = None
-    for extension in extensions:
-        img = load_image(filepath + extension, check_existing=True)
+    for path in path_list:
+        for extension in extensions:
+            filepath = path + os.path.sep + pure_name + extension
+            img = load_image(filepath, check_existing=True)
+            if img is not None:
+                print('loaded texture: ' + filepath)
+                img.name = pure_name
+                break
         if img is not None:
-            print('loaded texture: ' + filepath + extension)
-            img.name = pure_name
             break
 
     if img is None:
@@ -175,14 +177,19 @@ def find_texture_from_path(path, file):
     img.alpha_mode = 'STRAIGHT'
     return img
 
-def create_texture_node(material, path, file):
-    img = find_texture_from_path(path, file)
+def create_texture_node(material, path_list, file):
+    path_list_pref = []
+    for path in path_list:
+        path_list_pref.append(path.name)
+    path_list_full = [material.texture_path] + path_list_pref
+    img = find_texture_from_path(path_list_full, file)
     for node in material.node_tree.nodes:
         if node.type == 'TEX_IMAGE' and node.image == img:
-            print(f"复用现有节点: {node.name}, 纹理: {img.name}")
+            print(f"Reusing existing node: {node.name}")
             return node
     node = material.node_tree.nodes.new("ShaderNodeTexImage")
     node.image = img
+    node.name = file
     return node
 
 def create_node_no_repeative(material, type, name):
