@@ -3,25 +3,12 @@ from bpy.props import *
 from bpy.types import Material, PropertyGroup
 from bpy_extras import node_shader_utils
 from io_mesh_w3d.common.utils.helpers import *
+from io_mesh_w3d.common.materials.RA3.material_parameter_map import *
 
 Material.material_type = EnumProperty(
     name='Material Type',
     description='defines the type of the material',
-    items=[
-        ('BuildingsSoviet', 'BuildingsSoviet', 'desc: todo'),
-        ('BuildingsAllied', 'BuildingsAllied', 'desc: todo'),
-        ('BuildingsJapan', 'BuildingsJapan', 'desc: todo'),
-        ('BuildingsGenericDamageFill', 'BuildingsGenericDamageFill', 'desc: todo'),
-
-        ('ObjectsSoviet', 'ObjectsSoviet', 'desc: todo'),
-        ('ObjectsAllied', 'ObjectsAllied', 'desc: todo'),
-        ('ObjectsJapan', 'ObjectsJapan', 'desc: todo'),
-        ('ObjectsAlliedTread', 'ObjectsAlliedTread', 'desc: todo'),
-
-        ('Infantry', 'Infantry', 'desc: todo'),
-        ('DefaultW3D', 'DefaultW3D', 'desc: todo'),
-
-        ('VERTEX_MATERIAL', 'Vertex', 'desc: todo'),],
+    items=material_type_items,
     default='VERTEX_MATERIAL')
 
 Material.prelit_type = EnumProperty(
@@ -162,11 +149,77 @@ Material.technique = IntProperty(
 
 
 
+def OnRenderingChanged(self, context):
+    if self.material_type in ["DefaultW3D", "Infantry", "Tree", "BasicW3D"]:
+        if self.blend_mode == 0 and self.texture_0 != "" and self.texture_1 != "" and self.num_textures == 2:
+            self.blend_method = "OPAQUE"
+        else:
+            if self.alpha_test == False:
+                self.blend_method = "HASHED"    
+            else:
+                self.blend_method = "CLIP"  
+    elif self.material_type == "FXLightning":
+        self.blend_method = "HASHED"    
+    else:
+        if self.alpha_test == False:
+                self.blend_method = "OPAQUE"    
+        else:
+            self.blend_method = "CLIP"  
 
 
+def OnTexture01Changed(self:Material, context):
+    principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
+    if (self.num_textures == 1 or self.texture_1 == "") and self.texture_0 != "":
+        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0)
+        # math_node_alpha = create_node_no_repeative(self, "ShaderNodeMath", "math_node_alpha")
+        # math_node_alpha.use_clamp = True
+        # math_node_alpha.operation = 'MULTIPLY' 
+        # math_node_alpha.inputs[1].default_value = self.alpha
+        #self.node_tree.links.new(tex_node.outputs["Color"], math_node_alpha.inputs[0])
+        #self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])
+        if self.material_type != "Infantry":
+            self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
 
+        color_mix_node_diffuse = create_node_no_repeative(self, "ShaderNodeMixRGB", "color_mix_node_diffuse")
+        color_mix_node_diffuse.blend_type = 'MULTIPLY'
+        color_mix_node_diffuse.inputs[0].default_value = 1  # Mix factor
+        color_mix_node_diffuse.inputs[1].default_value = (*self.diffuse_color3, 1.0)  # Convert to 4D vector
+        self.node_tree.links.new(tex_node.outputs["Color"], color_mix_node_diffuse.inputs[2])
+        self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
+    elif self.texture_0 != "" and self.texture_1 != "" and self.num_textures == 2:
+        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0)
+        tex_node1 = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_1)
 
+        # opacity has no effect in w3d
+        # math_node_alpha = create_node_no_repeative(self, "ShaderNodeMath", "math_node_alpha")
+        # math_node_alpha.use_clamp = True
+        # math_node_alpha.operation = 'MULTIPLY' 
+        # math_node_alpha.inputs[1].default_value = self.alpha
+        # self.node_tree.links.new(texture_mix_node.outputs["Color"], math_node_alpha.inputs[0])
+        # self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])
+        if self.material_type != "Infantry":
+            self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Alpha"])
 
+        uv_tex_0 = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_0")
+        uv_tex_0.uv_map = "UVMap"
+        uv_tex_1 = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_1")
+        uv_tex_1.uv_map = "UVMap.001"
+
+        self.node_tree.links.new(uv_tex_0.outputs['UV'], tex_node.inputs['Vector'])
+        self.node_tree.links.new(uv_tex_1.outputs['UV'], tex_node1.inputs['Vector'])
+
+        texture_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "texture_mix_node")
+        texture_mix_node.blend_type = 'MULTIPLY'
+        texture_mix_node.inputs[0].default_value = 1  # Mix factor
+        self.node_tree.links.new(tex_node.outputs["Color"], texture_mix_node.inputs[1])
+        self.node_tree.links.new(tex_node1.outputs["Color"], texture_mix_node.inputs[2])
+
+        color_mix_node_diffuse = create_node_no_repeative(self, "ShaderNodeMixRGB", "color_mix_node_diffuse")
+        color_mix_node_diffuse.blend_type = 'MULTIPLY'
+        color_mix_node_diffuse.inputs[0].default_value = 1  # Mix factor
+        color_mix_node_diffuse.inputs[1].default_value = (*self.diffuse_color3, 1.0)  # Convert to 4D vector
+        self.node_tree.links.new(tex_node.outputs["Color"], color_mix_node_diffuse.inputs[2])
+        self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
 
 
 Material.ambient_color = FloatVectorProperty(
@@ -175,7 +228,7 @@ Material.ambient_color = FloatVectorProperty(
     size=3,
     default=(1.0, 1.0, 1.0),
     min=0.0, max=1.0,
-    description='Ambient color')
+    description='Color factor multiplied to the abmient light color. In Blender this option has no effect')
 
 Material.diffuse_color4 = FloatVectorProperty(
     name='Diffuse4',
@@ -183,15 +236,16 @@ Material.diffuse_color4 = FloatVectorProperty(
     size=4,
     default=(1.0, 1.0, 1.0, 1.0),
     min=0.0, max=1.0,
-    description='Diffuse color with alpha')
+    description='Diffuse color with alpha, only for shader BuildingsGenericDamageFill.fx. Not effect in Blender.')
 
 Material.diffuse_color3 = FloatVectorProperty(
-    name='Diffuse3',
+    name='Diffuse Color',
     subtype='COLOR',
     size=3,
     default=(1.0, 1.0, 1.0),
     min=0.0, max=1.0,
-    description='Diffuse color')
+    description='Color factor multiplied to the diffuse texture color',
+    update=OnTexture01Changed)
 
 def OnEmissionMultChanged(self, context):
     principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
@@ -200,71 +254,14 @@ Material.emission_mult = FloatProperty(
     name='Emissive HDR Multipler',
     default=1.0,
     min=0.0, max=1000.0,
-    description='Additional Multiplier for the final color',
+    description='Additional Multiplier for the Emission Color',
     update=OnEmissionMultChanged)
 
-def OnTexture01Changed(self:Material, context):
-    if self.blend_mode == 0:
-        self.blend_method = "OPAQUE"
-    else:
-        if self.alpha_test == False:
-            self.blend_method = "HASHED"    
-        else:
-            self.blend_method = "CLIP"  
-
+def OnEmissionColorChanged(self, context):
     principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
-    if (self.num_textures == 1 or self.texture_1 == "") and self.texture_0 != "":
-        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0)
-        math_node_alpha = create_node_no_repeative(self, "ShaderNodeMath", "math_node_alpha")
-        math_node_alpha.use_clamp = True
-        math_node_alpha.operation = 'MULTIPLY' 
-        math_node_alpha.inputs[1].default_value = self.alpha
-        self.node_tree.links.new(tex_node.outputs["Color"], math_node_alpha.inputs[0])
-        self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])
-        self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
-
-        # Add a node to combine two colors using multiply
-        color_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "color_mix_node")
-        color_mix_node.blend_type = 'MULTIPLY'
-        color_mix_node.inputs[0].default_value = 0  # Mix factor
-        color_mix_node.inputs[1].default_value = (*self.emission_color, 1.0)  # Convert to 4D vector
-        self.node_tree.links.new(tex_node.outputs["Color"], color_mix_node.inputs[2])
-        self.node_tree.links.new(color_mix_node.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])
-
-    elif self.texture_0 != "" and self.texture_1 != "" and self.num_textures == 2:
-        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0)
-        tex_node1 = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_1)
-
-        uv_tex_0 = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_0")
-        uv_tex_0.uv_map = "UVMap.001"
-        uv_tex_1 = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_1")
-        uv_tex_1.uv_map = "UVMap"
-
-        self.node_tree.links.new(uv_tex_0.outputs['UV'], tex_node.inputs['Vector'])
-        self.node_tree.links.new(uv_tex_1.outputs['UV'], tex_node1.inputs['Vector'])
-
-        texture_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "texture_mix_node")
-        texture_mix_node.blend_type = 'MULTIPLY'
-        texture_mix_node.inputs[0].default_value = 0  # Mix factor
-        self.node_tree.links.new(tex_node.outputs["Color"], texture_mix_node.inputs[1])
-        self.node_tree.links.new(tex_node1.outputs["Color"], texture_mix_node.inputs[2])
-
-        math_node_alpha = create_node_no_repeative(self, "ShaderNodeMath", "math_node_alpha")
-        math_node_alpha.use_clamp = True
-        math_node_alpha.operation = 'MULTIPLY' 
-        math_node_alpha.inputs[1].default_value = self.alpha
-        self.node_tree.links.new(texture_mix_node.outputs["Color"], math_node_alpha.inputs[0])
-        self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])
-        self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
-
-        # Add a node to combine two colors using multiply
-        color_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "color_mix_node")
-        color_mix_node.blend_type = 'MULTIPLY'
-        color_mix_node.inputs[0].default_value = 0  # Mix factor
-        color_mix_node.inputs[1].default_value = (*self.emission_color, 1.0)  # Convert to 4D vector
-        self.node_tree.links.new(texture_mix_node.outputs["Color"], color_mix_node.inputs[2])
-        self.node_tree.links.new(color_mix_node.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])
-
+    color_node = create_node_no_repeative(self, "ShaderNodeRGB", "emission_color_node")
+    color_node.outputs["Color"].default_value = (*self.emission_color, 1.0)  # Convert to 4D vector
+    self.node_tree.links.new(color_node.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])
 Material.emission_color = FloatVectorProperty(
     name='Emission Color',
     subtype='COLOR',
@@ -272,20 +269,30 @@ Material.emission_color = FloatVectorProperty(
     default=(1.0, 1.0, 1.0),
     min=0.0, max=1.0,
     description='Emission color',
-    update=OnTexture01Changed)
+    update=OnEmissionColorChanged)
 
 Material.alpha_test = BoolProperty(
     name='Alpha Test',
     description='Enable the alpha test. Pixels with alpha < 64/255 will be cliped. ',
-    default=True,
-    update=OnTexture01Changed)
+    default=False,
+    update=OnRenderingChanged)
+
+def OnAlphaBlendChanged(self:Material, context):
+    if self.alpha_blend:
+        self.blend_mode=1
+    else:
+        self.blend_mode=0
+Material.alpha_blend = BoolProperty(
+    name='Alpha Blend',
+    description='For Simple.fx: Which blend mode should be used. False: Opaque, True: Alpha',
+    default=False,
+    update=OnAlphaBlendChanged)
 
 Material.alpha = FloatProperty(
     name='Alpha Multiplier',
     default=1.0,
     min=0.0, max=10.0,
-    description='Additional Multiplier for the alpha value',
-    update=OnTexture01Changed)
+    description='Additional Multiplier for the alpha value')
 
 Material.blend_mode = IntProperty(
     name='Blend mode',
@@ -293,12 +300,12 @@ Material.blend_mode = IntProperty(
     default=0,
     min=0,
     max=5,
-    update=OnTexture01Changed)
+    update=OnRenderingChanged)
 
 Material.num_textures = IntProperty(
     name='NumTextures',
-    description='TODO',
-    default=1,
+    description='1: use texture_0. 2: mix texture_0 and texture_1',
+    default=2,
     min=1,
     max=2,
     update=OnTexture01Changed)
@@ -310,25 +317,27 @@ Material.texture_path = StringProperty(
 
 Material.texture_0 = StringProperty(
     name='Texture 0',
-    description='TODO',
+    description='Base color texture for material type: DefaultW3D, Infantry, Tree and BasicW3D.\n* DefaultW3D: num_textures==1: alpha from alpha; num_textures==2: no alpha channel. Color depth represents alpha.\n* Infantry: alpha channel represents faction color.\n* Tree and BasicW3D: alpha channel represents alpha' ,
     default='',
     update=OnTexture01Changed)
 
 Material.texture_1 = StringProperty(
     name='Texture 1',
-    description='TODO',
+    description='To be mixed with Texture 0 in DefaultW3D',
     default='',
     update=OnTexture01Changed)
 
 
 
-Material.bump_uv_scale = FloatVectorProperty(
-    name='Bump UV Scale',
-    subtype='TRANSLATION',
-    size=2,
-    default=(0.0, 0.0),
-    min=0.0, max=1.0,
-    description='Bump uv scale')
+def OnBumpScaleChanged(self, context):
+    principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
+    principled.normalmap_strength = self.bump_uv_scale
+Material.bump_uv_scale = FloatProperty(
+    name='Bump Scale',
+    default=1.0,
+    min=0.0, max=10.0,
+    description='Additional Multiplier for the normal map value',
+    update=OnBumpScaleChanged)
 
 Material.edge_fade_out = FloatProperty(
     name='Edge fade out',
@@ -341,6 +350,11 @@ Material.depth_write = BoolProperty(
     name='Depth write',
     description='Todo',
     default=False)
+
+Material.fog_enable = BoolProperty(
+    name='Enable Fog',
+    description='Used in simple.fx',
+    default=True)
 
 Material.sampler_clamp_uv_no_mip_0 = FloatVectorProperty(
     name='Sampler clamp UV no MIP 0',
@@ -362,9 +376,10 @@ def OnDiffuseTextureChanged(self, context):
     principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
     tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture)
     self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
+    self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
 Material.diffuse_texture = StringProperty(
     name='Diffuse Texture',
-    description='The main color texture',
+    description='The main color texture. No Alpha channel',
     default='',
     update=OnDiffuseTextureChanged)
 
@@ -389,36 +404,35 @@ def OnNrmTextureChanged(self:Material, context):
     separate_rgb = create_node_no_repeative(self, "ShaderNodeSeparateColor", "separate_rgb")
     self.node_tree.links.new(tex_node.outputs['Color'], separate_rgb.inputs['Color'])
 
-    # 计算 X^2
+    # X^2
     math_x2 = create_node_no_repeative(self, 'ShaderNodeMath', "math_x2")
     math_x2.operation = 'POWER'
     math_x2.inputs[1].default_value = 2.0
     self.node_tree.links.new(separate_rgb.outputs['Red'], math_x2.inputs[0])
 
-    # 计算 Y^2
+    # Y^2
     math_y2 = create_node_no_repeative(self, 'ShaderNodeMath', "math_y2")
     math_y2.operation = 'POWER'
     math_y2.inputs[1].default_value = 2.0
     self.node_tree.links.new(separate_rgb.outputs['Green'], math_y2.inputs[0])
 
-    # 计算 X^2 + Y^2
+    # X^2 + Y^2
     math_add = create_node_no_repeative(self, 'ShaderNodeMath', "math_add")
     math_add.operation = 'ADD'
     self.node_tree.links.new(math_x2.outputs['Value'], math_add.inputs[0])
     self.node_tree.links.new(math_y2.outputs['Value'], math_add.inputs[1])
 
-    # 计算 1 - (X^2 + Y^2)
+    # 1 - (X^2 + Y^2)
     math_subtract = create_node_no_repeative(self, 'ShaderNodeMath', "math_subtract")
     math_subtract.operation = 'SUBTRACT'
     math_subtract.inputs[0].default_value = 1.0
     self.node_tree.links.new(math_add.outputs['Value'], math_subtract.inputs[1])
 
-    # 计算 sqrt(1 - X^2 - Y^2)
+    # sqrt(1 - X^2 - Y^2)
     math_sqrt = create_node_no_repeative(self, 'ShaderNodeMath', "math_sqrt")
     math_sqrt.operation = 'SQRT'
     self.node_tree.links.new(math_subtract.outputs['Value'], math_sqrt.inputs[0])
 
-    # 组合 X, Y, Z 通道为向量
     combine_rgb = create_node_no_repeative(self, 'ShaderNodeCombineRGB', "combine_rgb")
     self.node_tree.links.new(separate_rgb.outputs['Red'], combine_rgb.inputs['R'])  # X
     self.node_tree.links.new(separate_rgb.outputs['Green'], combine_rgb.inputs['G'])  # Y
@@ -514,16 +528,6 @@ Material.environment_mult = FloatProperty(
     min=0.0, max=1.0,
     description='Todo')
 
-def OnBumpScaleChanged(self, context):
-    principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
-    principled.normalmap_strength = self.bump_scale
-Material.bump_scale = FloatProperty(
-    name='Bump Scale',
-    default=1.0,
-    min=0.0, max=10.0,
-    description='Additional Multiplier for the normal map value',
-    update=OnBumpScaleChanged)
-
 Material.recolor_texture = StringProperty(
     name='Recolor texture',
     description='TODO',
@@ -611,9 +615,74 @@ Material.ion_hull_texture = StringProperty(
     default='')
 
 Material.multi_texture_enable = BoolProperty(
-    name='Multi texture enable',
+    name='MultiTextureEnable',
+    description='Todo',
+    default=False,
+    update=OnRenderingChanged)
+
+Material.diffuse_coord_offset = FloatVectorProperty(
+    name='DiffuseCoordOffset',
+    subtype='TRANSLATION',
+    size=4,
+    default=(0.0, 0.0, 0.0, 0.0),
+    min=0.0, max=1.0,
+    description='TODO')
+
+Material.multiply_blend_enable = BoolProperty(
+    name='MultiplyBlendEnable',
     description='Todo',
     default=False)
+
+Material.unique_coord_enable = BoolProperty(
+    name='UniqueWorldCoordEnable',
+    description='Todo',
+    default=False)
+
+Material.unique_coord_scalar = FloatProperty(
+    name='UniqueWorldCoordScalar',
+    default=0.0,
+    min=0.0, max=1.0,
+    description='Todo')
+
+Material.unique_coord_strength = FloatProperty(
+    name='UniqueWorldCoordStrength',
+    default=0.0,
+    min=0.0, max=1.0,
+    description='Todo')
+
+Material.disp_scalar = FloatProperty(
+    name='DisplaceScalar',
+    default=0.0,
+    min=0.0, max=50.0,
+    description='Todo')
+
+Material.disp_amp = FloatProperty(
+    name='DisplaceAmp',
+    default=0.0,
+    min=0.0, max=50.0,
+    description='Todo')
+
+Material.disp_angle = FloatProperty(
+    name='DisplaceDivergenceAngle',
+    default=0.0,
+    min=0.0, max=180.0,
+    description='Todo')
+
+Material.disp_speed = FloatProperty(
+    name='DisplaceSpeed',
+    default=0.0,
+    min=0.0, max=50.0,
+    description='Todo')
+
+
+
+
+
+
+
+
+
+
 
 # already existing
 # Material.specular_color

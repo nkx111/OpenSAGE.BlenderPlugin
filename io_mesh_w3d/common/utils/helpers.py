@@ -183,6 +183,7 @@ def create_texture_node(material, path_list, file):
         path_list_pref.append(path.name)
     path_list_full = [material.texture_path] + path_list_pref
     img = find_texture_from_path(path_list_full, file)
+    img.alpha_mode = "NONE"
     for node in material.node_tree.nodes:
         if node.type == 'TEX_IMAGE' and node.image == img:
             print(f"Reusing existing node: {node.name}")

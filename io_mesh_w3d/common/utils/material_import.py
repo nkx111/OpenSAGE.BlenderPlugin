@@ -137,10 +137,9 @@ def create_material_from_shader_material(context, name, shader_mat):
     
     material = bpy.data.materials.new(name)
     material_type = str(shader_mat.header.type_name).split('.')[0]
-    material.material_type = 'DefaultW3D'
-    for key in material_parameter_map.keys():
-        if str.upper(material_type) == str.upper(key):
-            material.material_type = key
+    name, para_map = get_material_map(context, material_type)
+
+    material.material_type = name
     material.texture_path = os.path.dirname(context.filepath)
     material.use_nodes = True
     material.show_transparent_back = False
@@ -148,13 +147,12 @@ def create_material_from_shader_material(context, name, shader_mat):
 
     principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=False)
 
-    para_map = material_parameter_map[material.material_type]
     for prop in shader_mat.properties:
         if prop.name in para_map:
             property_name_bpy = para_map[prop.name]
             setattr(material, property_name_bpy, prop.to_property())
         else:
-            context.error('shader property not in list: ' + prop.name)
+            context.warning('shader property not in list: ' + prop.name)
 
     return material, principled
 

@@ -290,10 +290,10 @@ class MATERIAL_PROPERTIES_PANEL_PT_w3d(Panel):
         mat = context.object.active_material
         col = layout.column()
         col.prop(mat, 'material_type')
-        if mat.material_type in material_parameter_map:
-            for key, value in material_parameter_map[mat.material_type].items():
-                col = layout.column()
-                col.prop(mat, value)
+        name, material_map = get_material_map(self, mat.material_type)
+        for key, value in material_map.items():
+            col = layout.column()
+            col.prop(mat, value)
 
 
 class TOOLS_PANEL_PT_w3d(bpy.types.Panel):
@@ -444,8 +444,8 @@ class PreferencesPanel(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     selected_module: EnumProperty(
-        name="Select a Material Group",
-        description="Select a Material Group",
+        name="Choose",
+        description="Load pre-defined materials of a specific game.\nYou can still import models from other games, the shader parameters will be converted.",
         items=MATERIAL_MODULES,
         default="RA3",
         update=set_selected_module
@@ -498,7 +498,7 @@ class PreferencesPanel(bpy.types.AddonPreferences):
         layout = self.layout
 
         box = layout.box()
-        box.label(text="Material Group", icon='MATERIAL')
+        box.label(text="Material Definition Group", icon='MATERIAL')
         box.prop(self, "selected_module")
 
         box = layout.box()
