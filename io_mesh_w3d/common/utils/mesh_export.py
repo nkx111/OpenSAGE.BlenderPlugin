@@ -29,7 +29,7 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
         if mesh_object.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
 
-        mesh_struct = Mesh()
+        mesh_struct = W3DMesh()
         mesh_struct.header = MeshHeader(
             mesh_name=mesh_object.name,
             container_name=container_name)

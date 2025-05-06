@@ -3,14 +3,14 @@ from bpy.props import *
 from bpy.types import Material, PropertyGroup
 from bpy_extras import node_shader_utils
 from io_mesh_w3d.common.utils.helpers import *
-from io_mesh_w3d.common.materials.RA3.material_parameter_map import *
+from io_mesh_w3d.common.materials.RA3.parameter_map import *
 
 inherited_texture_keys = ["texture_0", "diffuse_texture"]
 def OnResetMaterialType(self:Material, context):
     if self.material_type != self.material_type_old:
         inherited_texture = ""
-        _, para_map_old = get_material_map(context, self.material_type_old)
-        _, para_map_new = get_material_map(context, self.material_type)
+        _, para_map_old = get_material_parameter_map(self.material_type_old)
+        _, para_map_new = get_material_parameter_map(self.material_type)
         for key, prop in self.bl_rna.properties.items():
             for tex_key in inherited_texture_keys:
                 if key == tex_key and getattr(self, key) != "":
@@ -23,7 +23,7 @@ def OnResetMaterialType(self:Material, context):
                     else:
                         default = prop.default
 
-                print(prop, prop.name, default)
+                print(prop, getattr(self, key), default)
                 setattr(self, key, default)
         self.node_tree.nodes.clear()
 
@@ -32,6 +32,7 @@ def OnResetMaterialType(self:Material, context):
                 if tex_key in para_map_new.values():
                     setattr(self, tex_key, inherited_texture)
 
+        self.name = self.name.replace(self.material_type_old, self.material_type)
         self.material_type_old = self.material_type
 
 Material.material_type = EnumProperty(
@@ -216,15 +217,14 @@ def OnTexture01Changed(self:Material, context):
         mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
         self.node_tree.links.new(uv_tex_0.outputs['UV'], mapping_tex_0.inputs['Vector'])
         self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
-        # math_node_alpha = create_node_no_repeative(self, "ShaderNodeMath", "math_node_alpha")
-        # math_node_alpha.use_clamp = True
-        # math_node_alpha.operation = 'MULTIPLY' 
-        # math_node_alpha.inputs[1].default_value = self.alpha
-        #self.node_tree.links.new(tex_node.outputs["Color"], math_node_alpha.inputs[0])
-        #self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])
         if self.material_type != "Infantry":
             if self.alpha_test:
-                self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
+                math_node_alpha = create_node_no_repeative(self, "ShaderNodeMath", "math_node_alpha")
+                math_node_alpha.use_clamp = True
+                math_node_alpha.operation = 'MULTIPLY' 
+                math_node_alpha.inputs[1].default_value = self.alpha
+                self.node_tree.links.new(tex_node.outputs["Alpha"], math_node_alpha.inputs[0])
+                self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])   
             else:
                 self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Alpha"])
                
@@ -254,7 +254,12 @@ def OnTexture01Changed(self:Material, context):
         # self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])
         if self.material_type != "Infantry":
             if self.alpha_test:
-                self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
+                math_node_alpha = create_node_no_repeative(self, "ShaderNodeMath", "math_node_alpha")
+                math_node_alpha.use_clamp = True
+                math_node_alpha.operation = 'MULTIPLY' 
+                math_node_alpha.inputs[1].default_value = self.alpha
+                self.node_tree.links.new(tex_node.outputs["Alpha"], math_node_alpha.inputs[0])
+                self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])   
             else:
                 self.node_tree.links.new(texture_mix_node.outputs["Color"], principled.node_principled_bsdf.inputs["Alpha"])
 
@@ -279,16 +284,24 @@ def OnTexture01Changed(self:Material, context):
         self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
 
 
-Material.ambient_color = FloatVectorProperty(
-    name='Ambient Color',
+Material.ambient_color3 = FloatVectorProperty(
+    name='Ambient Color (RGB)',
     subtype='COLOR',
     size=3,
     default=(1.0, 1.0, 1.0),
     min=0.0, max=1.0,
     description='Color factor multiplied to the abmient light color. In Blender this option has no effect')
 
+Material.ambient_color4 = FloatVectorProperty(
+    name='Ambient Color (RGBA)',
+    subtype='COLOR',
+    size=4,
+    default=(1.0, 1.0, 1.0, 1.0),
+    min=0.0, max=1.0,
+    description='Color factor multiplied to the abmient light color. In Blender this option has no effect')
+
 Material.diffuse_color4 = FloatVectorProperty(
-    name='Diffuse4',
+    name='Diffuse Color (RGBA)',
     subtype='COLOR',
     size=4,
     default=(1.0, 1.0, 1.0, 1.0),
@@ -296,7 +309,7 @@ Material.diffuse_color4 = FloatVectorProperty(
     description='Diffuse color with alpha, only for shader BuildingsGenericDamageFill.fx. Not effect in Blender.')
 
 Material.diffuse_color3 = FloatVectorProperty(
-    name='Diffuse Color',
+    name='Diffuse Color (RGB)',
     subtype='COLOR',
     size=3,
     default=(1.0, 1.0, 1.0),
@@ -323,14 +336,14 @@ Material.emission_color = FloatVectorProperty(
     name='Emission Color',
     subtype='COLOR',
     size=3,
-    default=(1.0, 1.0, 1.0),
+    default=(0, 0, 0),
     min=0.0, max=1.0,
     description='Emission color',
     update=OnEmissionColorChanged)
 
 Material.alpha_test = BoolProperty(
     name='Alpha Test',
-    description='Enable the alpha test. Pixels with alpha < 64/255 will be cliped. For DefaultW3D: if true, uses texture\'s alpha channel as alpha',
+    description='Enable the alpha test. If true, Clip pixels with alpha < 96/255. Otherwise blend multiple objects with alpha',
     default=False,
     update=OnTexture01Changed)
 
@@ -349,11 +362,12 @@ Material.alpha = FloatProperty(
     name='Alpha Multiplier',
     default=1.0,
     min=0.0, max=10.0,
-    description='Additional Multiplier for the alpha value')
+    description='Additional Multiplier for the alpha value',
+    update=OnTexture01Changed)
 
 Material.blend_mode = IntProperty(
     name='Blend mode',
-    description='Which blend mode should be used. 0: Opaque, 1: Alpha, 2: Additive',
+    description='Which blend mode should be used.\n0: Opaque\n1: Alpha\n2: Additive',
     default=0,
     min=0,
     max=5,
@@ -361,7 +375,7 @@ Material.blend_mode = IntProperty(
 
 Material.num_textures = IntProperty(
     name='NumTextures',
-    description='1: use texture_0. 2: mix texture_0 and texture_1',
+    description='1: Use texture_0 only.\n2: Mix texture_0 and texture_1',
     default=2,
     min=1,
     max=2,
@@ -686,7 +700,7 @@ Material.use_recolor = BoolProperty(
 
 Material.use_world = BoolProperty(
     name='Use world cords',
-    description='Todo',
+    description='Use world coordinates to scroll the textures, instead of time. No effect in Blender.',
     default=True)
 
 Material.house_color_pulse = BoolProperty(
@@ -829,4 +843,18 @@ Material.disp_speed = FloatProperty(
 # Material.specular_intensity
 # Material.use_backface_culling
 # Material.blend_method
+# Material.metallic
 
+Material.specular_intensity2 = FloatProperty(
+    name='Shiness',
+    default=1.0,
+    min=0.0, max=50.0,
+    description='Additional multiplier for the Specular Color. No effect in PBR. No effect in Blender. Please set to 1.')
+
+Material.specular_color2 = FloatVectorProperty(
+    name='Specular Color',
+    subtype='COLOR',
+    size=3,
+    default=(0, 0, 0),
+    min=0.0, max=1.0,
+    description='Color factor multiplied to the reflected color component. No effect in PBR. No effect in Blender. Please set to 0.')

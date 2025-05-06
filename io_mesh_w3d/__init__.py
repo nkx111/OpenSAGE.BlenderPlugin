@@ -290,7 +290,7 @@ class MATERIAL_PROPERTIES_PANEL_PT_w3d(Panel):
         mat = context.object.active_material
         col = layout.column()
         col.prop(mat, 'material_type')
-        name, material_map = get_material_map(self, mat.material_type)
+        name, material_map = get_material_parameter_map(mat.material_type)
         for key, value in material_map.items():
             col = layout.column()
             col.prop(mat, value)

@@ -137,8 +137,8 @@ W3D_CHUNK_SHADER_MATERIALS = 0x50
 W3D_CHUNK_TANGENTS = 0x60
 W3D_CHUNK_BITANGENTS = 0x61
 
-
-class Mesh:
+# avoid naming collapse
+class W3DMesh:
     def __init__(self):
         self.header = None
         self.user_text = ''
@@ -207,7 +207,7 @@ class Mesh:
 
     @staticmethod
     def read(context, io_stream, chunk_end):
-        result = Mesh()
+        result = W3DMesh()
 
         while io_stream.tell() < chunk_end:
             (chunk_type, chunk_size, subchunk_end) = read_chunk_head(io_stream)
@@ -401,7 +401,7 @@ class Mesh:
 
     @staticmethod
     def parse(context, xml_mesh):
-        result = Mesh()
+        result = W3DMesh()
         result.header = MeshHeader()
 
         identifier = xml_mesh.get('id')

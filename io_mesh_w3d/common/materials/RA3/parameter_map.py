@@ -7,7 +7,7 @@ from bpy.types import Material, PropertyGroup
 
 material_parameter_map = {
 ("BuildingsSoviet", "BuildingsAllied", "BuildingsJapan", "BuildingsGeneric", "NormalMapped"): {
-    "PreviewHoles": "preview_holes",
+    "__PreviewHoles": "preview_holes",
 
     "DiffuseTexture":"diffuse_texture",
     "NormalMap":"normal_texture",
@@ -17,17 +17,17 @@ material_parameter_map = {
 },
 
 ("BuildingsGenericDamageFill",) : {
-    "PreviewHoles": "preview_holes",
+    "__PreviewHoles": "preview_holes",
 
     "DiffuseTexture":"diffuse_texture",
     "NormalMap":"normal_texture",
     "SpecMap":"spec_texture",
     "DamagedTexture":"damaged_texture",
     "BumpScale":"bump_uv_scale",
-    "AmbientColor":"ambient_color",
+    "AmbientColor":"ambient_color3",
     "DiffuseColor":"diffuse_color4",
-    "SpecularColor":"specular_color",
-    "SpecularExponent":"specular_intensity",
+    "SpecularColor":"specular_color2",
+    "SpecularExponent":"specular_intensity2",
     "EnvMult":"environment_mult"
 },
 
@@ -40,10 +40,10 @@ material_parameter_map = {
 },
 
 ("Infantry", "Tree", "BasicW3D"):{
-    "ColorAmbient":"ambient_color",
+    "ColorAmbient":"ambient_color3",
     "ColorDiffuse":"diffuse_color3",
-    "ColorSpecular":"specular_color",
-    "Shininess":"specular_intensity",
+    "ColorSpecular":"specular_color2",
+    "Shininess":"specular_intensity2",
     "ColorEmissive":"emission_color",
     "Texture_0":"texture_0",
     "DepthWriteEnable":"depth_write",
@@ -53,10 +53,10 @@ material_parameter_map = {
 },
 
 ("DefaultW3D",):{
-    "ColorAmbient":"ambient_color",
+    "ColorAmbient":"ambient_color3",
     "ColorDiffuse":"diffuse_color3",
-    "ColorSpecular":"specular_color",
-    "Shininess":"specular_intensity",
+    "ColorSpecular":"specular_color2",
+    "Shininess":"specular_intensity2",
     "ColorEmissive":"emission_color",
     "EmissiveHDRMultipler":"emission_mult",
     "Opacity":"alpha",
@@ -78,7 +78,7 @@ material_parameter_map = {
     "TexCoordMapper_1":"tex_coord_mapper_1",
     "TexCoordTransform_1":"tex_coord_transform_1",
 
-    "PreviewScrolling": "preview_scrolling"
+    "__PreviewScrolling": "preview_scrolling"
 },
 
 ("Simple",):{
@@ -127,7 +127,7 @@ material_parameter_map = {
 }
 }
 
-def get_material_map(context, material_name):
+def get_material_parameter_map(material_name):
     for keys in material_parameter_map:
         for key in keys:
             if str.upper(material_name) == str.upper(key):

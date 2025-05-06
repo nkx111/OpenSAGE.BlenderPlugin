@@ -111,8 +111,8 @@ def create_material_from_vertex_material(name, vert_mat):
     principled.emission_color = vert_mat.vm_info.emissive.to_vector_rgb()
 
     material.attributes = attributes
-    material.specular = vert_mat.vm_info.specular.to_vector_rgb()
-    material.ambient = vert_mat.vm_info.ambient.to_vector_rgba()
+    material.specular_color = vert_mat.vm_info.specular.to_vector_rgb()
+    material.ambient_color4 = vert_mat.vm_info.ambient.to_vector_rgba()
     material.translucency = vert_mat.vm_info.translucency
 
     material.stage0_mapping = '0x%08X' % (attribs & STAGE0_MAPPING_MASK)
@@ -137,7 +137,7 @@ def create_material_from_shader_material(context, name, shader_mat):
     
     material = bpy.data.materials.new(name)
     material_type = str(shader_mat.header.type_name).split('.')[0]
-    name, para_map = get_material_map(context, material_type)
+    name, para_map = get_material_parameter_map(material_type)
 
     material.material_type_old = name
     material.material_type = name
@@ -145,6 +145,7 @@ def create_material_from_shader_material(context, name, shader_mat):
     material.use_nodes = True
     material.show_transparent_back = False
     material.technique = shader_mat.header.technique
+    material.alpha_threshold = 96 / 255
 
     principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=False)
 
