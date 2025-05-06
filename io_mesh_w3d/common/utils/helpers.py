@@ -177,7 +177,9 @@ def find_texture_from_path(path_list, file):
     img.alpha_mode = 'STRAIGHT'
     return img
 
-def create_texture_node(material, path_list, file):
+def create_texture_node(material, path_list, file, name = None):
+    if name is None:
+        name = file
     path_list_pref = []
     for path in path_list:
         path_list_pref.append(path.name)
@@ -185,12 +187,13 @@ def create_texture_node(material, path_list, file):
     img = find_texture_from_path(path_list_full, file)
     img.alpha_mode = "NONE"
     for node in material.node_tree.nodes:
-        if node.type == 'TEX_IMAGE' and node.image == img:
+        if node.name == name:
             print(f"Reusing existing node: {node.name}")
+            node.image = img
             return node
     node = material.node_tree.nodes.new("ShaderNodeTexImage")
     node.image = img
-    node.name = file
+    node.name = name
     return node
 
 def create_node_no_repeative(material, type, name):

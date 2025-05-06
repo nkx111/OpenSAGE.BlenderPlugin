@@ -76,7 +76,9 @@ material_parameter_map = {
     "TexCoordTransform_0":"tex_coord_transform_0",
     "TextureAnimation_FPS_NumPerRow_LastFrame_FrameOffset_0":"tex_ani_fps_NPR_lastFrame_frameOffset_0",
     "TexCoordMapper_1":"tex_coord_mapper_1",
-    "TexCoordTransform_1":"tex_coord_transform_1"
+    "TexCoordTransform_1":"tex_coord_transform_1",
+
+    "PreviewScrolling": "preview_scrolling"
 },
 
 ("Simple",):{
@@ -130,7 +132,7 @@ def get_material_map(context, material_name):
         for key in keys:
             if str.upper(material_name) == str.upper(key):
                 return key, material_parameter_map[keys]
-    context.error(f'shader class not in defined: {material_name}. Use DefaultW3D!')
+    print(f'shader class not in defined: {material_name}. Use DefaultW3D!')
     return "DefaultW3D", material_parameter_map[("DefaultW3D",)]
 
 material_type_items = []

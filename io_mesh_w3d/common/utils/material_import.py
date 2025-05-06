@@ -139,6 +139,7 @@ def create_material_from_shader_material(context, name, shader_mat):
     material_type = str(shader_mat.header.type_name).split('.')[0]
     name, para_map = get_material_map(context, material_type)
 
+    material.material_type_old = name
     material.material_type = name
     material.texture_path = os.path.dirname(context.filepath)
     material.use_nodes = True

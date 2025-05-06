@@ -5,11 +5,47 @@ from bpy_extras import node_shader_utils
 from io_mesh_w3d.common.utils.helpers import *
 from io_mesh_w3d.common.materials.RA3.material_parameter_map import *
 
+inherited_texture_keys = ["texture_0", "diffuse_texture"]
+def OnResetMaterialType(self:Material, context):
+    if self.material_type != self.material_type_old:
+        inherited_texture = ""
+        _, para_map_old = get_material_map(context, self.material_type_old)
+        _, para_map_new = get_material_map(context, self.material_type)
+        for key, prop in self.bl_rna.properties.items():
+            for tex_key in inherited_texture_keys:
+                if key == tex_key and getattr(self, key) != "":
+                    inherited_texture = getattr(self, key)
+            if key in para_map_old.values() and not key in para_map_new.values():
+                default = ""
+                if hasattr(prop, "default"):
+                    if hasattr(prop, "is_array") and getattr(prop, "is_array", False):
+                        default = prop.default_array
+                    else:
+                        default = prop.default
+
+                print(prop, prop.name, default)
+                setattr(self, key, default)
+        self.node_tree.nodes.clear()
+
+        if inherited_texture != "":
+            for tex_key in inherited_texture_keys:
+                if tex_key in para_map_new.values():
+                    setattr(self, tex_key, inherited_texture)
+
+        self.material_type_old = self.material_type
+
 Material.material_type = EnumProperty(
     name='Material Type',
     description='defines the type of the material',
     items=material_type_items,
-    default='VERTEX_MATERIAL')
+    default='DefaultW3D',
+    update=OnResetMaterialType)
+
+Material.material_type_old = EnumProperty(
+    name='Material Type Old',
+    description='defines the type of the material',
+    items=material_type_items,
+    default='DefaultW3D')
 
 Material.prelit_type = EnumProperty(
     name='Prelit Type',
@@ -149,28 +185,37 @@ Material.technique = IntProperty(
 
 
 
-def OnRenderingChanged(self, context):
+def OnRenderingChanged(self:Material, context):
     if self.material_type in ["DefaultW3D", "Infantry", "Tree", "BasicW3D"]:
         if self.blend_mode == 0 and self.texture_0 != "" and self.texture_1 != "" and self.num_textures == 2:
             self.blend_method = "OPAQUE"
         else:
             if self.alpha_test == False:
-                self.blend_method = "HASHED"    
+                self.blend_method = "BLEND"    
+                self.show_transparent_back = True
             else:
                 self.blend_method = "CLIP"  
     elif self.material_type == "FXLightning":
         self.blend_method = "HASHED"    
+        self.show_transparent_back = False
     else:
         if self.alpha_test == False:
                 self.blend_method = "OPAQUE"    
         else:
             self.blend_method = "CLIP"  
+            self.show_transparent_back = True
 
 
 def OnTexture01Changed(self:Material, context):
+    OnRenderingChanged(self,context)
     principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
     if (self.num_textures == 1 or self.texture_1 == "") and self.texture_0 != "":
-        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0)
+        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
+        uv_tex_0 = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_0")
+        uv_tex_0.uv_map = "UVMap"
+        mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
+        self.node_tree.links.new(uv_tex_0.outputs['UV'], mapping_tex_0.inputs['Vector'])
+        self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
         # math_node_alpha = create_node_no_repeative(self, "ShaderNodeMath", "math_node_alpha")
         # math_node_alpha.use_clamp = True
         # math_node_alpha.operation = 'MULTIPLY' 
@@ -178,7 +223,11 @@ def OnTexture01Changed(self:Material, context):
         #self.node_tree.links.new(tex_node.outputs["Color"], math_node_alpha.inputs[0])
         #self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])
         if self.material_type != "Infantry":
-            self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
+            if self.alpha_test:
+                self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
+            else:
+                self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Alpha"])
+               
 
         color_mix_node_diffuse = create_node_no_repeative(self, "ShaderNodeMixRGB", "color_mix_node_diffuse")
         color_mix_node_diffuse.blend_type = 'MULTIPLY'
@@ -187,8 +236,14 @@ def OnTexture01Changed(self:Material, context):
         self.node_tree.links.new(tex_node.outputs["Color"], color_mix_node_diffuse.inputs[2])
         self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
     elif self.texture_0 != "" and self.texture_1 != "" and self.num_textures == 2:
-        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0)
-        tex_node1 = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_1)
+        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
+        tex_node1 = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_1, name="tex_node1")
+
+        texture_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "texture_mix_node")
+        texture_mix_node.blend_type = 'MULTIPLY'
+        texture_mix_node.inputs[0].default_value = 0.5  # Mix factor
+        self.node_tree.links.new(tex_node.outputs["Color"], texture_mix_node.inputs[1])
+        self.node_tree.links.new(tex_node1.outputs["Color"], texture_mix_node.inputs[2])
 
         # opacity has no effect in w3d
         # math_node_alpha = create_node_no_repeative(self, "ShaderNodeMath", "math_node_alpha")
@@ -198,27 +253,29 @@ def OnTexture01Changed(self:Material, context):
         # self.node_tree.links.new(texture_mix_node.outputs["Color"], math_node_alpha.inputs[0])
         # self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])
         if self.material_type != "Infantry":
-            self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Alpha"])
+            if self.alpha_test:
+                self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
+            else:
+                self.node_tree.links.new(texture_mix_node.outputs["Color"], principled.node_principled_bsdf.inputs["Alpha"])
 
         uv_tex_0 = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_0")
         uv_tex_0.uv_map = "UVMap"
+        mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
+        self.node_tree.links.new(uv_tex_0.outputs['UV'], mapping_tex_0.inputs['Vector'])
         uv_tex_1 = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_1")
         uv_tex_1.uv_map = "UVMap.001"
+        mapping_tex_1 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_1")
+        self.node_tree.links.new(uv_tex_1.outputs['UV'], mapping_tex_1.inputs['Vector'])
 
-        self.node_tree.links.new(uv_tex_0.outputs['UV'], tex_node.inputs['Vector'])
-        self.node_tree.links.new(uv_tex_1.outputs['UV'], tex_node1.inputs['Vector'])
+        self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
+        self.node_tree.links.new(mapping_tex_1.outputs['Vector'], tex_node1.inputs['Vector'])
 
-        texture_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "texture_mix_node")
-        texture_mix_node.blend_type = 'MULTIPLY'
-        texture_mix_node.inputs[0].default_value = 1  # Mix factor
-        self.node_tree.links.new(tex_node.outputs["Color"], texture_mix_node.inputs[1])
-        self.node_tree.links.new(tex_node1.outputs["Color"], texture_mix_node.inputs[2])
 
         color_mix_node_diffuse = create_node_no_repeative(self, "ShaderNodeMixRGB", "color_mix_node_diffuse")
         color_mix_node_diffuse.blend_type = 'MULTIPLY'
         color_mix_node_diffuse.inputs[0].default_value = 1  # Mix factor
         color_mix_node_diffuse.inputs[1].default_value = (*self.diffuse_color3, 1.0)  # Convert to 4D vector
-        self.node_tree.links.new(tex_node.outputs["Color"], color_mix_node_diffuse.inputs[2])
+        self.node_tree.links.new(texture_mix_node.outputs["Color"], color_mix_node_diffuse.inputs[2])
         self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
 
 
@@ -273,9 +330,9 @@ Material.emission_color = FloatVectorProperty(
 
 Material.alpha_test = BoolProperty(
     name='Alpha Test',
-    description='Enable the alpha test. Pixels with alpha < 64/255 will be cliped. ',
+    description='Enable the alpha test. Pixels with alpha < 64/255 will be cliped. For DefaultW3D: if true, uses texture\'s alpha channel as alpha',
     default=False,
-    update=OnRenderingChanged)
+    update=OnTexture01Changed)
 
 def OnAlphaBlendChanged(self:Material, context):
     if self.alpha_blend:
@@ -317,7 +374,7 @@ Material.texture_path = StringProperty(
 
 Material.texture_0 = StringProperty(
     name='Texture 0',
-    description='Base color texture for material type: DefaultW3D, Infantry, Tree and BasicW3D.\n* DefaultW3D: num_textures==1: alpha from alpha; num_textures==2: no alpha channel. Color depth represents alpha.\n* Infantry: alpha channel represents faction color.\n* Tree and BasicW3D: alpha channel represents alpha' ,
+    description='Base color texture for material type: DefaultW3D, Infantry, Tree and BasicW3D.\n* DefaultW3D: no alpha channel, texture color --> alpha.\n* Infantry: alpha channel represents faction color.\n* Tree and BasicW3D: alpha channel represents alpha' ,
     default='',
     update=OnTexture01Changed)
 
@@ -478,28 +535,103 @@ Material.damaged_texture = StringProperty(
     update=OnDamagedViewChanged)
 
 
+def ScrollUV_Tex0(self,context):
+    x0,y0,vx,vy = self.tex_coord_transform_0
 
+    value_node_0_x = create_node_no_repeative(self, "ShaderNodeValue", "value_node_0_x")
+    value_node_0_x_driver = value_node_0_x.outputs['Value'].driver_add('default_value')
+    value_node_0_x_driver.driver.type = 'SCRIPTED'
+    value_node_0_x_driver.driver.expression = f'{x0} + frame / 30 * {vx}'
+
+    value_node_0_y = create_node_no_repeative(self, "ShaderNodeValue", "value_node_0_y")
+    value_node_0_y_driver = value_node_0_y.outputs['Value'].driver_add('default_value')
+    value_node_0_y_driver.driver.type = 'SCRIPTED'
+    value_node_0_y_driver.driver.expression = f'{y0} + frame / 30 * {vy}'
+
+    value_node_0_xyz = create_node_no_repeative(self, "ShaderNodeCombineXYZ", "value_node_0_xyz")
+    self.node_tree.links.new(value_node_0_x.outputs['Value'], value_node_0_xyz.inputs['X'])
+    self.node_tree.links.new(value_node_0_y.outputs['Value'], value_node_0_xyz.inputs['Y'])
+
+    mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
+    self.node_tree.links.new(value_node_0_xyz.outputs['Vector'], mapping_tex_0.inputs['Location'])
+
+    texture_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "texture_mix_node")
+    texture_mix_node.inputs[0].default_value = 1
+
+def UnScrollUV_Tex0(self, context):
+    mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
+    inputs = mapping_tex_0.inputs["Location"]
+    if inputs.is_linked:
+        link = inputs.links[0]
+        self.node_tree.links.remove(link)
+    texture_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "texture_mix_node")
+    texture_mix_node.inputs[0].default_value = 0.5
+
+def ScrollUV_Tex1(self,context):
+    x0,y0,vx,vy = self.tex_coord_transform_1
+
+    value_node_1_x = create_node_no_repeative(self, "ShaderNodeValue", "value_node_1_x")
+    value_node_1_x_driver = value_node_1_x.outputs['Value'].driver_add('default_value')
+    value_node_1_x_driver.driver.type = 'SCRIPTED'
+    value_node_1_x_driver.driver.expression = f'{x0} + frame / 30 * {vx}'
+
+    value_node_1_y = create_node_no_repeative(self, "ShaderNodeValue", "value_node_1_y")
+    value_node_1_y_driver = value_node_1_y.outputs['Value'].driver_add('default_value')
+    value_node_1_y_driver.driver.type = 'SCRIPTED'
+    value_node_1_y_driver.driver.expression = f'{y0} + frame / 30 * {vy}'
+
+    value_node_1_xyz = create_node_no_repeative(self, "ShaderNodeCombineXYZ", "value_node_1_xyz")
+    self.node_tree.links.new(value_node_1_x.outputs['Value'], value_node_1_xyz.inputs['X'])
+    self.node_tree.links.new(value_node_1_y.outputs['Value'], value_node_1_xyz.inputs['Y'])
+
+    mapping_tex_1 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_1")
+    self.node_tree.links.new(value_node_1_xyz.outputs['Vector'], mapping_tex_1.inputs['Location'])
+
+    texture_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "texture_mix_node")
+    texture_mix_node.inputs[0].default_value = 1
+
+def UnScrollUV_Tex1(self, context):
+    mapping_tex_1 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_1")
+    inputs = mapping_tex_1.inputs["Location"]
+    if inputs.is_linked:
+        link = inputs.links[0]
+        self.node_tree.links.remove(link)
+    texture_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "texture_mix_node")
+    texture_mix_node.inputs[0].default_value = 0.5
+
+def OnScrollUV(self: Material, context):
+    if self.tex_coord_mapper_0 == 1 and self.preview_scrolling:
+        ScrollUV_Tex0(self, context)
+    else:
+        UnScrollUV_Tex0(self,context)
+
+    if self.tex_coord_mapper_1 == 1 and self.preview_scrolling:
+        ScrollUV_Tex1(self, context)
+    else:
+        UnScrollUV_Tex1(self,context)
 
 Material.secondary_texture_blend_mode = IntProperty(
     name='Secondary texture blend mode',
-    description='TODO',
+    description='Affects color blend mode for the secondary texture. No effect here in Blender.\n0: multiply.\n1: multiply and then multiply by 2.\n2: mix with texture_0 alpha.\n3: do not use texture_1, but accumulate SpecularColor',
     default=0,
     min=0,
     max=3)
 
 Material.tex_coord_mapper_0 = IntProperty(
     name='TexCoord mapper 0',
-    description='TODO',
+    description='Controls uv scrolling of texture_0. 0: No scroll. 1: scroll. 2: video-like scroll',
     default=0,
     min=0,
-    max=5)
+    max=2,
+    update=OnScrollUV)
 
 Material.tex_coord_mapper_1 = IntProperty(
     name='TexCoord mapper 1',
-    description='TODO',
+    description='Controls uv scrolling of texture_1. 0: No scroll. 1: scroll.',
     default=0,
     min=0,
-    max=5)
+    max=1,
+    update=OnScrollUV)
 
 Material.tex_coord_transform_0 = FloatVectorProperty(
     name='TexCoord transform 0',
@@ -507,7 +639,8 @@ Material.tex_coord_transform_0 = FloatVectorProperty(
     size=4,
     default=(0.0, 0.0, 0.0, 0.0),
     min=0.0, max=1.0,
-    description='TODO')
+    description='Defines scroll parameters of texture_0. x,y: offset. z,w: scroll speed per second',
+    update=OnScrollUV)
 
 Material.tex_coord_transform_1 = FloatVectorProperty(
     name='TexCoord transform 1',
@@ -515,7 +648,14 @@ Material.tex_coord_transform_1 = FloatVectorProperty(
     size=4,
     default=(0.0, 0.0, 0.0, 0.0),
     min=0.0, max=1.0,
-    description='TODO')
+    description='Defines scroll parameters of texture_1. x,y: offset. z,w: scroll speed per second',
+    update=OnScrollUV)
+
+Material.preview_scrolling = BoolProperty(
+    name='Preview Texture Scrolling',
+    description='Simulate the scrolling effect of textures. Press Space-key to start animation, the uv coordinates will change with time.',
+    default=False,
+    update=OnScrollUV)
 
 Material.environment_texture = StringProperty(
     name='Environment texture',
