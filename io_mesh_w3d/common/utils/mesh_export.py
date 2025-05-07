@@ -290,7 +290,7 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
                 context.warning(f'vertex color layer name \'{layer.name}\' is not one of [DCG, DIG, SCG]')
                 continue
 
-            target = [RGBA] * len(mesh.vertices)
+            target[:] = [RGBA()] * len(mesh.vertices)
 
             for i, loop in enumerate(mesh.loops):
                 target[loop.vertex_index] = RGBA(layer.data[i].color)
