@@ -151,7 +151,7 @@ def create_material_from_shader_material(context, name, shader_mat):
     principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=False)
 
     for prop in shader_mat.properties:
-        if prop.name in para_map:
+        if prop.name in para_map and prop.value is not None:
             property_name_bpy = para_map[prop.name]
             setattr(material, property_name_bpy, prop.to_property())
         else:

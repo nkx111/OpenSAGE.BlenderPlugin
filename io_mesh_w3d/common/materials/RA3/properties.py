@@ -7,7 +7,7 @@ from io_mesh_w3d.common.materials.RA3.parameter_map import *
 
 inherited_texture_keys = ["texture_0", "diffuse_texture"]
 def OnResetMaterialType(self:Material, context):
-    if self.material_type != self.material_type_old:
+    if self.material_type != self.material_type_old and self.node_tree is not None:
         inherited_texture = ""
         _, para_map_old = get_material_parameter_map(self.material_type_old)
         _, para_map_new = get_material_parameter_map(self.material_type)

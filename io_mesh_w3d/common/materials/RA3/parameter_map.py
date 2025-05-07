@@ -141,7 +141,9 @@ material_parameter_map = {
     "CullingEnable":"use_backface_culling",
 
     "__PreviewScrolling": "preview_scrolling",
-}
+},
+
+("VERTEX_MATERIAL",):{}
 }
 
 def get_material_parameter_map(material_name, context = None):
@@ -158,4 +160,3 @@ material_type_items = []
 for keys in material_parameter_map:
     for key in keys:
         material_type_items.append((key, key, ''))
-material_type_items.append(('VERTEX_MATERIAL', 'VERTEX_MATERIAL', ''))

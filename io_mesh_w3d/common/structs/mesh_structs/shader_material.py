@@ -128,6 +128,8 @@ class ShaderMaterialProperty:
             write_float(self.value, io_stream)
         elif self.type == VEC2_PROPERTY:
             write_vector2(self.value, io_stream)
+        elif self.type == VEC3_PROPERTY:
+            write_vector4(Vector((self.value.x, self.value.y, self.value.z ,1)), io_stream)
         elif self.type == VEC4_PROPERTY:
             write_vector4(self.value, io_stream)
         elif self.type == LONG_PROPERTY:
