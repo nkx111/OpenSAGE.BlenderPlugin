@@ -31,7 +31,7 @@ material_parameter_map = {
     "EnvMult":"environment_mult"
 },
 
-("ObjectsSoviet", "ObjectsAllied", "ObjectsJapan", "ObjectsGeneric", "ObjectsAlliedTread"):{
+("ObjectsSoviet", "ObjectsAllied", "ObjectsJapan", "ObjectsGeneric", "ObjectsAlliedTread", "ObjectsTerrain"):{
     "DiffuseTexture":"diffuse_texture",
     "NormalMap":"normal_texture",
     "SpecMap":"spec_texture",
@@ -121,7 +121,7 @@ material_parameter_map = {
 },
 
 
-("FXLightning",):{
+("FXLightning","FXProtonCollider"):{
     "Texture_0":"texture_0",
     "ColorDiffuse":"diffuse_color3",
     "EmissiveHDRMultipler":"emission_mult",
@@ -130,7 +130,7 @@ material_parameter_map = {
     "MultiplyBlendEnable":"multiply_blend_enable",
     "EdgeFadeOut":"edge_fade_out",
     "Texture_1":"texture_1",
-    "UniqueWorldCoordEnable":"unique_coord_enable",
+    "UniqueWorldCoordEnable":"use_world",
     "UniqueWorldCoordScalar":"unique_coord_scalar",
     "UniqueWorldCoordStrength":"unique_coord_strength",
     "DisplaceScalar":"disp_scalar",
@@ -140,6 +140,7 @@ material_parameter_map = {
     "UseRecolorColors":"use_recolor",
     "CullingEnable":"use_backface_culling",
 
+    "__PreviewScrolling": "preview_scrolling",
 }
 }
 

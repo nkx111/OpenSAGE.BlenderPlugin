@@ -292,11 +292,20 @@ class MATERIAL_PROPERTIES_PANEL_PT_w3d(Panel):
         col.prop(mat, 'material_type')
         col = layout.column()
         col.prop(mat, 'technique')
-        name, material_map = get_material_parameter_map(mat.material_type)
-        for key, value in material_map.items():
-            col = layout.column()
-            col.prop(mat, value)
 
+        name, material_map = get_material_parameter_map(mat.material_type)
+        for key, value in material_map.items(): # internal functions
+            if "__" in key: 
+                col = layout.column()
+                col.prop(mat, value)
+
+        box = layout.box()
+        box.label(text="Shader Parameters", icon='PREFERENCES')
+        row = box.row()
+        for key, value in material_map.items():
+            if not "__" in key: 
+                col = row.column()
+                box.prop(mat, value)
 
 class TOOLS_PANEL_PT_w3d(bpy.types.Panel):
     bl_label = 'W3D Tools'

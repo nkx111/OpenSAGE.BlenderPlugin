@@ -194,15 +194,12 @@ def OnRenderingChanged(self:Material, context):
                 self.show_transparent_back = True
             else:
                 self.blend_method = "CLIP"  
-    elif self.material_type == "FXLightning":
-        self.blend_method = "HASHED"    
-        self.show_transparent_back = False
-    elif self.material_type == "MuzzleFlash":
+    elif self.material_type in ["MuzzleFlash","FXLightning","FXProtonCollider"]:
         self.blend_method = "BLEND"    
         self.show_transparent_back = True
     else:
         if self.alpha_test == False:
-                self.blend_method = "OPAQUE"    
+            self.blend_method = "OPAQUE"
         else:
             self.blend_method = "CLIP"  
             self.show_transparent_back = True
@@ -211,7 +208,7 @@ def OnRenderingChanged(self:Material, context):
 def OnTexture01Changed(self:Material, context):
     OnRenderingChanged(self,context)
     principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
-    if (self.num_textures == 1 or self.texture_1 == "") and self.texture_0 != "":
+    if (self.num_textures == 1 or self.texture_1 == "" or self.material_type in ["MuzzleFlash", "FXLightning", "FXProtonCollider"]) and self.texture_0 != "":
         tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
         uv_tex_0 = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_0")
         uv_tex_0.uv_map = "UVMap"
@@ -241,6 +238,9 @@ def OnTexture01Changed(self:Material, context):
         color_mix_node_diffuse.inputs[1].default_value = (*self.diffuse_color3, 1.0)  # Convert to 4D vector
         self.node_tree.links.new(tex_node.outputs["Color"], color_mix_node_diffuse.inputs[2])
         self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
+        if self.material_type in ["FXLightning","FXProtonCollider"]:
+            self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])
+        
     elif self.texture_0 != "" and self.texture_1 != "" and self.num_textures == 2:
         tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
         tex_node1 = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_1, name="tex_node1")
@@ -330,6 +330,8 @@ Material.diffuse_color3 = FloatVectorProperty(
 def OnEmissionMultChanged(self, context):
     principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
     principled.emission_strength = self.emission_mult
+
+
 Material.emission_mult = FloatProperty(
     name='Emissive HDR Multipler',
     default=1.0,
@@ -339,9 +341,9 @@ Material.emission_mult = FloatProperty(
 
 def OnEmissionColorChanged(self, context):
     principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
-    color_node = create_node_no_repeative(self, "ShaderNodeRGB", "emission_color_node")
-    color_node.outputs["Color"].default_value = (*self.emission_color, 1.0)  # Convert to 4D vector
-    self.node_tree.links.new(color_node.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])
+    emission_color_node = create_node_no_repeative(self, "ShaderNodeRGB", "emission_color_node")
+    emission_color_node.outputs["Color"].default_value = (*self.emission_color, 1.0)  # Convert to 4D vector
+    self.node_tree.links.new(emission_color_node.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])
 Material.emission_color = FloatVectorProperty(
     name='Emission Color',
     subtype='COLOR',
@@ -404,7 +406,7 @@ Material.texture_0 = StringProperty(
 
 Material.texture_1 = StringProperty(
     name='Texture 1',
-    description='To be mixed with Texture 0 in DefaultW3D',
+    description='DefaultW3D: To be mixed with Texture 0\nFXLightning: to be added to the uv of Texture_1.',
     default='',
     update=OnTexture01Changed)
 
@@ -623,7 +625,8 @@ def UnScrollUV_Tex1(self, context):
     texture_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "texture_mix_node")
     texture_mix_node.inputs[0].default_value = 0.5
 
-def ScrollAndRotateUV_Tex0(self, context):
+# MuzzleFlash
+def ScrollAndRotateUV_Muzzle(self, context):
     mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
     mapping_tex_0.inputs["Location"].default_value = (-self.tex_coord_trans_u0, -self.tex_coord_trans_v0, 0)
 
@@ -646,11 +649,81 @@ def ScrollAndRotateUV_Tex0(self, context):
     tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
     self.node_tree.links.new(mapping_tex_0_rotate.outputs['Vector'], tex_node.inputs['Vector'])
 
-def UnScrollAndRotateUV_Tex0(self, context):
+def UnScrollAndRotateUV_Muzzle(self, context):
     mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
     mapping_tex_0.inputs["Location"].default_value = (0, 0, 0)
     tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
     self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
+
+# FXLightning
+def ScrollAndRotateUV_Lightning(self, context):
+    value_node_nrm = create_node_no_repeative(self, "ShaderNodeValue", "value_node_nrm_x")
+    value_node_nrm_driver = value_node_nrm.outputs['Value'].driver_add('default_value')
+    value_node_nrm_driver.driver.type = 'SCRIPTED'
+    value_node_nrm_driver.driver.expression = f'frame / 30 * 0.01 * {self.disp_speed}'
+
+    combine_node_nrm = create_node_no_repeative(self, "ShaderNodeCombineXYZ", "combine_node_nrm")
+    self.node_tree.links.new(value_node_nrm.outputs['Value'], combine_node_nrm.inputs['X'])
+
+    uv_tex_nrm = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_nrm")
+    uv_tex_nrm.uv_map = "UVMap"
+    mapping_tex_nrm = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_nrm")
+    self.node_tree.links.new(combine_node_nrm.outputs['Vector'], mapping_tex_nrm.inputs['Location'])
+    self.node_tree.links.new(uv_tex_nrm.outputs['UV'], mapping_tex_nrm.inputs['Vector'])
+    mapping_tex_nrm.inputs["Rotation"].default_value = (0, 0, self.disp_angle * 0.017453)
+    mapping_tex_nrm.inputs["Scale"].default_value = (self.disp_scalar, self.disp_scalar, 1)
+
+    tex_node_nrm = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_1, name="tex_node_nrm")
+    self.node_tree.links.new(mapping_tex_nrm.outputs['Vector'], tex_node_nrm.inputs['Vector'])
+
+    sep_color_nrm = create_node_no_repeative(self, "ShaderNodeSeparateColor", "sep_color_nrm")
+    self.node_tree.links.new(tex_node_nrm.outputs['Color'], sep_color_nrm.inputs['Color'])
+
+    combine_node_nrm_color = create_node_no_repeative(self, "ShaderNodeCombineXYZ", "combine_node_nrm_color")
+    self.node_tree.links.new(sep_color_nrm.outputs['Red'], combine_node_nrm_color.inputs['X'])
+    self.node_tree.links.new(sep_color_nrm.outputs['Green'], combine_node_nrm_color.inputs['Y'])
+
+    math_nrm = create_node_no_repeative(self, "ShaderNodeVectorMath", "math_nrm")
+    math_nrm.operation = 'MULTIPLY' 
+    self.node_tree.links.new(combine_node_nrm_color.outputs['Vector'], math_nrm.inputs[0])
+    math_nrm.inputs[1].default_value = (self.disp_amp, self.disp_amp, 0)
+
+    vx, vy, sx, sy = self.diffuse_coord_offset
+
+    value_node_diffuse_x = create_node_no_repeative(self, "ShaderNodeValue", "value_node_diffuse_x")
+    value_node_diffuse_x_driver = value_node_diffuse_x.outputs['Value'].driver_add('default_value')
+    value_node_diffuse_x_driver.driver.type = 'SCRIPTED'
+    value_node_diffuse_x_driver.driver.expression = f'frame / 30 * {vx}'
+
+    value_node_diffuse_y = create_node_no_repeative(self, "ShaderNodeValue", "value_node_diffuse_y")
+    value_node_diffuse_y_driver = value_node_diffuse_y.outputs['Value'].driver_add('default_value')
+    value_node_diffuse_y_driver.driver.type = 'SCRIPTED'
+    value_node_diffuse_y_driver.driver.expression = f'frame / 30 * {vy}'
+
+    combine_node_diffuse = create_node_no_repeative(self, "ShaderNodeCombineXYZ", "combine_node_diffuse")
+    self.node_tree.links.new(value_node_diffuse_x.outputs['Value'], combine_node_diffuse.inputs['X'])
+    self.node_tree.links.new(value_node_diffuse_y.outputs['Value'], combine_node_diffuse.inputs['Y'])
+
+    math_nrm_diffuse = create_node_no_repeative(self, "ShaderNodeVectorMath", "math_nrm_diffuse")
+    math_nrm_diffuse.operation = 'ADD' 
+    self.node_tree.links.new(math_nrm.outputs['Vector'], math_nrm_diffuse.inputs[0])   
+    self.node_tree.links.new(combine_node_diffuse.outputs['Vector'], math_nrm_diffuse.inputs[1])   
+
+    # retrieve
+    mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
+    self.node_tree.links.new(math_nrm_diffuse.outputs['Vector'], mapping_tex_0.inputs["Location"])   
+    mapping_tex_0.inputs["Scale"].default_value = (sx, sy, 1)
+
+
+def UnScrollAndRotateUV_Lightning(self, context):
+    # retrieve
+    mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
+    inputs = mapping_tex_0.inputs["Location"]
+    if inputs.is_linked:
+        link = inputs.links[0]
+        self.node_tree.links.remove(link)
+    mapping_tex_0.inputs["Scale"].default_value = (1, 1, 1)
+
 
 def OnScrollUV(self: Material, context):
     x0,y0,vx,vy = self.tex_coord_transform_0
@@ -664,9 +737,14 @@ def OnScrollUV(self: Material, context):
 
     if self.material_type == "MuzzleFlash":
         if self.preview_scrolling:
-            ScrollAndRotateUV_Tex0(self,context)
+            ScrollAndRotateUV_Muzzle(self,context)
         else:
-            UnScrollAndRotateUV_Tex0(self,context)
+            UnScrollAndRotateUV_Muzzle(self,context)
+    elif self.material_type in ["FXLightning","FXProtonCollider"]:
+        if self.preview_scrolling:
+            ScrollAndRotateUV_Lightning(self,context)
+        else:
+            UnScrollAndRotateUV_Lightning(self,context)
     else:
         if self.tex_coord_mapper_0 == 1 and self.preview_scrolling:
             ScrollUV_Tex0(self, context)
@@ -824,7 +902,7 @@ Material.ion_hull_texture = StringProperty(
 
 Material.multi_texture_enable = BoolProperty(
     name='MultiTextureEnable',
-    description='In FXLightning: Sample Texture_0 for a second time, with uv + DiffuseCoordOffset.zw, and blend the two passes.\nIn MuzzleFlash: Revert rotation direction.',
+    description='In FXLightning: Sample Texture_0 for a second time using inversed uv displacement. No effect in Blender\nIn MuzzleFlash: Revert rotation direction.',
     default=False,
     update=OnScrollUV)
 
@@ -832,17 +910,13 @@ Material.diffuse_coord_offset = FloatVectorProperty(
     name='DiffuseCoordOffset',
     subtype='TRANSLATION',
     size=4,
-    default=(0.0, 0.0, 0.0, 0.0),
+    default=(0.0, 0.0, 1.0, 1.0),
     min=0.0, max=1.0,
-    description='TODO')
+    description='In FXLightning: UV scroll parameters of Texture_0. x,y: scroll speed. z,w: scaling',
+    update=OnScrollUV)
 
 Material.multiply_blend_enable = BoolProperty(
     name='MultiplyBlendEnable',
-    description='Todo',
-    default=False)
-
-Material.unique_coord_enable = BoolProperty(
-    name='UniqueWorldCoordEnable',
     description='Todo',
     default=False)
 
@@ -850,37 +924,41 @@ Material.unique_coord_scalar = FloatProperty(
     name='UniqueWorldCoordScalar',
     default=0.0,
     min=0.0, max=1.0,
-    description='Todo')
+    description='Multiplied to the world coordinates when using world coordinates as UV. No effect in Blender.')
 
 Material.unique_coord_strength = FloatProperty(
     name='UniqueWorldCoordStrength',
     default=0.0,
     min=0.0, max=1.0,
-    description='Todo')
+    description='Same as UniqueWorldCoordScalar (stupid EA code...). No effect in Blender.')
 
 Material.disp_scalar = FloatProperty(
     name='DisplaceScalar',
     default=0.0,
     min=0.0, max=50.0,
-    description='Todo')
+    description='UV scale factor for Texture_1',
+    update=OnScrollUV)
 
 Material.disp_amp = FloatProperty(
     name='DisplaceAmp',
     default=0.0,
     min=0.0, max=50.0,
-    description='Todo')
+    description='Additional amplitude for the Texture_1 sampling result.',
+    update=OnScrollUV)
 
 Material.disp_angle = FloatProperty(
     name='DisplaceDivergenceAngle',
     default=0.0,
     min=0.0, max=180.0,
-    description='Todo')
+    description='UV rotation angle for Texture_1',
+    update=OnScrollUV)
 
 Material.disp_speed = FloatProperty(
     name='DisplaceSpeed',
     default=0.0,
     min=0.0, max=50.0,
-    description='Todo')
+    description='UV scrolling speed for Texture_1. Scroll x only',
+    update=OnScrollUV)
 
 
 

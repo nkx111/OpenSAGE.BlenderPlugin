@@ -146,6 +146,7 @@ def create_material_from_shader_material(context, name, shader_mat):
     material.show_transparent_back = False
     material.technique = shader_mat.header.technique
     material.alpha_threshold = 96 / 255
+    material.use_backface_culling = True
 
     principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=False)
 
