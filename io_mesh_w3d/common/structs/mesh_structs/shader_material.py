@@ -174,7 +174,6 @@ class ShaderMaterialProperty:
         return constant
 
     def create(self, parent):
-        print(self.name, self.type, self.value)
         if self.type == 1:
             xml_constant = create_node(parent, 'Texture')
             xml_value = create_node(xml_constant, 'Value')
@@ -211,8 +210,6 @@ class ShaderMaterialProperty:
             xml_value.text = str(self.value).lower()
 
         xml_constant.set('Name', self.name)
-
-        print(ET.tostring(xml_constant))
 
 W3D_CHUNK_SHADER_MATERIAL = 0x51
 

@@ -22,8 +22,6 @@ def OnResetMaterialType(self:Material, context):
                         default = prop.default_array
                     else:
                         default = prop.default
-
-                print(prop, getattr(self, key), default)
                 setattr(self, key, default)
         self.node_tree.nodes.clear()
 
@@ -177,10 +175,10 @@ Material.vm_args_1 = StringProperty(
 
 Material.technique = IntProperty(
     name='Technique',
-    description='Dont know yet',
+    description='The index of the technique (defined in the shader) to be used for rendering.',
     default=0,
     min=0,
-    max=1)
+    max=5)
 
 
 
@@ -199,6 +197,9 @@ def OnRenderingChanged(self:Material, context):
     elif self.material_type == "FXLightning":
         self.blend_method = "HASHED"    
         self.show_transparent_back = False
+    elif self.material_type == "MuzzleFlash":
+        self.blend_method = "BLEND"    
+        self.show_transparent_back = True
     else:
         if self.alpha_test == False:
                 self.blend_method = "OPAQUE"    
@@ -215,18 +216,23 @@ def OnTexture01Changed(self:Material, context):
         uv_tex_0 = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_0")
         uv_tex_0.uv_map = "UVMap"
         mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
+        x0,y0,vx,vy = self.tex_coord_transform_0
+        mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
         self.node_tree.links.new(uv_tex_0.outputs['UV'], mapping_tex_0.inputs['Vector'])
         self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
         if self.material_type != "Infantry":
-            if self.alpha_test:
-                math_node_alpha = create_node_no_repeative(self, "ShaderNodeMath", "math_node_alpha")
-                math_node_alpha.use_clamp = True
-                math_node_alpha.operation = 'MULTIPLY' 
-                math_node_alpha.inputs[1].default_value = self.alpha
-                self.node_tree.links.new(tex_node.outputs["Alpha"], math_node_alpha.inputs[0])
-                self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])   
+            if self.material_type == "MuzzleFlash":
+                self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
             else:
-                self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Alpha"])
+                if self.alpha_test:
+                    math_node_alpha = create_node_no_repeative(self, "ShaderNodeMath", "math_node_alpha")
+                    math_node_alpha.use_clamp = True
+                    math_node_alpha.operation = 'MULTIPLY' 
+                    math_node_alpha.inputs[1].default_value = self.alpha
+                    self.node_tree.links.new(tex_node.outputs["Alpha"], math_node_alpha.inputs[0])
+                    self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])   
+                else:
+                    self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Alpha"])
                
 
         color_mix_node_diffuse = create_node_no_repeative(self, "ShaderNodeMixRGB", "color_mix_node_diffuse")
@@ -266,10 +272,14 @@ def OnTexture01Changed(self:Material, context):
         uv_tex_0 = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_0")
         uv_tex_0.uv_map = "UVMap"
         mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
+        x0,y0,vx,vy = self.tex_coord_transform_0
+        mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
         self.node_tree.links.new(uv_tex_0.outputs['UV'], mapping_tex_0.inputs['Vector'])
         uv_tex_1 = create_node_no_repeative(self, "ShaderNodeUVMap", "uv_tex_1")
         uv_tex_1.uv_map = "UVMap.001"
         mapping_tex_1 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_1")
+        x1,y1,vx,vy = self.tex_coord_transform_0
+        mapping_tex_1.inputs["Scale"].default_value = (x1,y1,1)
         self.node_tree.links.new(uv_tex_1.outputs['UV'], mapping_tex_1.inputs['Vector'])
 
         self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
@@ -555,12 +565,12 @@ def ScrollUV_Tex0(self,context):
     value_node_0_x = create_node_no_repeative(self, "ShaderNodeValue", "value_node_0_x")
     value_node_0_x_driver = value_node_0_x.outputs['Value'].driver_add('default_value')
     value_node_0_x_driver.driver.type = 'SCRIPTED'
-    value_node_0_x_driver.driver.expression = f'{x0} + frame / 30 * {vx}'
+    value_node_0_x_driver.driver.expression = f'frame / 30 * {vx}'
 
     value_node_0_y = create_node_no_repeative(self, "ShaderNodeValue", "value_node_0_y")
     value_node_0_y_driver = value_node_0_y.outputs['Value'].driver_add('default_value')
     value_node_0_y_driver.driver.type = 'SCRIPTED'
-    value_node_0_y_driver.driver.expression = f'{y0} + frame / 30 * {vy}'
+    value_node_0_y_driver.driver.expression = f'frame / 30 * {-vy}' # need to invert y. Why?
 
     value_node_0_xyz = create_node_no_repeative(self, "ShaderNodeCombineXYZ", "value_node_0_xyz")
     self.node_tree.links.new(value_node_0_x.outputs['Value'], value_node_0_xyz.inputs['X'])
@@ -582,17 +592,17 @@ def UnScrollUV_Tex0(self, context):
     texture_mix_node.inputs[0].default_value = 0.5
 
 def ScrollUV_Tex1(self,context):
-    x0,y0,vx,vy = self.tex_coord_transform_1
+    x1,y1,vx,vy = self.tex_coord_transform_1
 
     value_node_1_x = create_node_no_repeative(self, "ShaderNodeValue", "value_node_1_x")
     value_node_1_x_driver = value_node_1_x.outputs['Value'].driver_add('default_value')
     value_node_1_x_driver.driver.type = 'SCRIPTED'
-    value_node_1_x_driver.driver.expression = f'{x0} + frame / 30 * {vx}'
+    value_node_1_x_driver.driver.expression = f'frame / 30 * {vx}'
 
     value_node_1_y = create_node_no_repeative(self, "ShaderNodeValue", "value_node_1_y")
     value_node_1_y_driver = value_node_1_y.outputs['Value'].driver_add('default_value')
     value_node_1_y_driver.driver.type = 'SCRIPTED'
-    value_node_1_y_driver.driver.expression = f'{y0} + frame / 30 * {vy}'
+    value_node_1_y_driver.driver.expression = f'frame / 30 * {-vy}'
 
     value_node_1_xyz = create_node_no_repeative(self, "ShaderNodeCombineXYZ", "value_node_1_xyz")
     self.node_tree.links.new(value_node_1_x.outputs['Value'], value_node_1_xyz.inputs['X'])
@@ -613,16 +623,60 @@ def UnScrollUV_Tex1(self, context):
     texture_mix_node = create_node_no_repeative(self, "ShaderNodeMixRGB", "texture_mix_node")
     texture_mix_node.inputs[0].default_value = 0.5
 
-def OnScrollUV(self: Material, context):
-    if self.tex_coord_mapper_0 == 1 and self.preview_scrolling:
-        ScrollUV_Tex0(self, context)
-    else:
-        UnScrollUV_Tex0(self,context)
+def ScrollAndRotateUV_Tex0(self, context):
+    mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
+    mapping_tex_0.inputs["Location"].default_value = (-self.tex_coord_trans_u0, -self.tex_coord_trans_v0, 0)
 
-    if self.tex_coord_mapper_1 == 1 and self.preview_scrolling:
-        ScrollUV_Tex1(self, context)
+    value_node_rotate = create_node_no_repeative(self, "ShaderNodeValue", "value_node_rotate")
+    value_node_rotate_driver = value_node_rotate.outputs['Value'].driver_add('default_value')
+    value_node_rotate_driver.driver.type = 'SCRIPTED'
+    if self.multi_texture_enable:
+        value_node_rotate_driver.driver.expression = f'frame / 30 * {-self.tex_coord_trans_angle}'
     else:
-        UnScrollUV_Tex1(self,context)
+        value_node_rotate_driver.driver.expression = f'frame / 30 * {self.tex_coord_trans_angle}'
+
+    combine_node_rotate = create_node_no_repeative(self, "ShaderNodeCombineXYZ", "combine_node_rotate")
+    self.node_tree.links.new(value_node_rotate.outputs['Value'], combine_node_rotate.inputs['Z'])
+
+    mapping_tex_0_rotate = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0_rotate")
+    mapping_tex_0_rotate.inputs["Location"].default_value = (self.tex_coord_trans_u0, self.tex_coord_trans_v0, 0)
+    self.node_tree.links.new(combine_node_rotate.outputs['Vector'], mapping_tex_0_rotate.inputs['Rotation'])
+    self.node_tree.links.new(mapping_tex_0.outputs['Vector'], mapping_tex_0_rotate.inputs['Vector'])
+
+    tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
+    self.node_tree.links.new(mapping_tex_0_rotate.outputs['Vector'], tex_node.inputs['Vector'])
+
+def UnScrollAndRotateUV_Tex0(self, context):
+    mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
+    mapping_tex_0.inputs["Location"].default_value = (0, 0, 0)
+    tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
+    self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
+
+def OnScrollUV(self: Material, context):
+    x0,y0,vx,vy = self.tex_coord_transform_0
+    x1,y1,vx,vy = self.tex_coord_transform_1
+
+    mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
+    mapping_tex_1 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_1")
+
+    mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
+    mapping_tex_1.inputs["Scale"].default_value = (x1,y1,1)
+
+    if self.material_type == "MuzzleFlash":
+        if self.preview_scrolling:
+            ScrollAndRotateUV_Tex0(self,context)
+        else:
+            UnScrollAndRotateUV_Tex0(self,context)
+    else:
+        if self.tex_coord_mapper_0 == 1 and self.preview_scrolling:
+            ScrollUV_Tex0(self, context)
+        else:
+            UnScrollUV_Tex0(self,context)
+
+        if self.tex_coord_mapper_1 == 1 and self.preview_scrolling:
+            ScrollUV_Tex1(self, context)
+        else:
+            UnScrollUV_Tex1(self,context)
 
 Material.secondary_texture_blend_mode = IntProperty(
     name='Secondary texture blend mode',
@@ -651,18 +705,18 @@ Material.tex_coord_transform_0 = FloatVectorProperty(
     name='TexCoord transform 0',
     subtype='TRANSLATION',
     size=4,
-    default=(0.0, 0.0, 0.0, 0.0),
-    min=0.0, max=1.0,
-    description='Defines scroll parameters of texture_0. x,y: offset. z,w: scroll speed per second',
+    default=(1.0, 1.0, 0.0, 0.0),
+    min=-100.0, max=100.0,
+    description='Defines scroll parameters of texture_0. x,y: scale. z,w: scroll speed per second',
     update=OnScrollUV)
 
 Material.tex_coord_transform_1 = FloatVectorProperty(
     name='TexCoord transform 1',
     subtype='TRANSLATION',
     size=4,
-    default=(0.0, 0.0, 0.0, 0.0),
-    min=0.0, max=1.0,
-    description='Defines scroll parameters of texture_1. x,y: offset. z,w: scroll speed per second',
+    default=(1.0, 1.0, 0.0, 0.0),
+    min=-100.0, max=100.0,
+    description='Defines scroll parameters of texture_1. x,y: scale. z,w: scroll speed per second',
     update=OnScrollUV)
 
 Material.preview_scrolling = BoolProperty(
@@ -770,9 +824,9 @@ Material.ion_hull_texture = StringProperty(
 
 Material.multi_texture_enable = BoolProperty(
     name='MultiTextureEnable',
-    description='Todo',
+    description='In FXLightning: Sample Texture_0 for a second time, with uv + DiffuseCoordOffset.zw, and blend the two passes.\nIn MuzzleFlash: Revert rotation direction.',
     default=False,
-    update=OnRenderingChanged)
+    update=OnScrollUV)
 
 Material.diffuse_coord_offset = FloatVectorProperty(
     name='DiffuseCoordOffset',
@@ -831,10 +885,50 @@ Material.disp_speed = FloatProperty(
 
 
 
+Material.tex_coord_trans_angle = FloatProperty(
+    name='Rotation Speed',
+    default=1.0,
+    min=-100.0, max=100.0,
+    description='Texture UV rotation speed',
+    update=OnScrollUV)
 
+Material.tex_coord_trans_u0 = FloatProperty(
+    name='Texture UV Offset: U0',
+    default=0.5,
+    min=0.0, max=1.0,
+    description='Texture UV rotation center',
+    update=OnScrollUV)
 
+Material.tex_coord_trans_v0 = FloatProperty(
+    name='Texture UV Offset: V0',
+    default=0.5,
+    min=0.0, max=1.0,
+    description='Texture UV rotation center',
+    update=OnScrollUV)
 
+Material.tex_coord_trans_u1 = FloatProperty(
+    name='Texture UV Offset: U1',
+    default=0.5,
+    min=0.0, max=1.0,
+    description='Another rotation center under differnt VertexColor. No effect?')
 
+Material.tex_coord_trans_v1 = FloatProperty(
+    name='Texture UV Offset: V1',
+    default=0.5,
+    min=0.0, max=1.0,
+    description='Another rotation center under differnt VertexColor. No effect?')
+
+Material.tex_coord_trans_u2 = FloatProperty(
+    name='Texture UV Offset: U2',
+    default=0.5,
+    min=0.0, max=1.0,
+    description='Another rotation center under differnt VertexColor. No effect?')
+
+Material.tex_coord_trans_v2 = FloatProperty(
+    name='Texture UV Offset: V2',
+    default=0.5,
+    min=0.0, max=1.0,
+    description='Another rotation center under differnt VertexColor. No effect?')
 
 
 

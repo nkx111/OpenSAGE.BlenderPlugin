@@ -139,7 +139,7 @@ def retrieve_shader_material(context, material:Material, principled, w3x=False):
     shadername, para_map = get_material_parameter_map(material_type) 
     shader_mat = ShaderMaterial(
         header=ShaderMaterialHeader(
-            type_name=shadername),
+            type_name=shadername+".fx", technique=material.technique),
         properties=[])
     
     for paraname, propname in para_map.items():

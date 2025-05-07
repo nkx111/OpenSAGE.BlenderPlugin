@@ -105,6 +105,22 @@ material_parameter_map = {
 #     "Phase1":"",
 # },
 
+("MuzzleFlash",):{
+    "ColorEmissive": "emission_color",
+    "Texture_0":"texture_0",
+    "MultiTextureEnable": "multi_texture_enable",
+    "TexCoordTransformAngle_0": "tex_coord_trans_angle",
+    "TexCoordTransformU_0": "tex_coord_trans_u0",
+    "TexCoordTransformV_0": "tex_coord_trans_v0",
+    "TexCoordTransformU_1": "tex_coord_trans_u1",
+    "TexCoordTransformV_1": "tex_coord_trans_v1",
+    "TexCoordTransformU_2": "tex_coord_trans_u2",
+    "TexCoordTransformV_2": "tex_coord_trans_v2",
+
+    "__PreviewScrolling": "preview_scrolling",
+},
+
+
 ("FXLightning",):{
     "Texture_0":"texture_0",
     "ColorDiffuse":"diffuse_color3",
@@ -127,12 +143,14 @@ material_parameter_map = {
 }
 }
 
-def get_material_parameter_map(material_name):
+def get_material_parameter_map(material_name, context = None):
     for keys in material_parameter_map:
         for key in keys:
             if str.upper(material_name) == str.upper(key):
                 return key, material_parameter_map[keys]
     print(f'shader class not in defined: {material_name}. Use DefaultW3D!')
+    if context is not None:
+        context.error(f'shader class not in defined: {material_name}. Use DefaultW3D!')
     return "DefaultW3D", material_parameter_map[("DefaultW3D",)]
 
 material_type_items = []

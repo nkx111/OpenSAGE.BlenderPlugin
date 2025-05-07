@@ -137,7 +137,7 @@ def create_material_from_shader_material(context, name, shader_mat):
     
     material = bpy.data.materials.new(name)
     material_type = str(shader_mat.header.type_name).split('.')[0]
-    name, para_map = get_material_parameter_map(material_type)
+    name, para_map = get_material_parameter_map(material_type, context)
 
     material.material_type_old = name
     material.material_type = name
