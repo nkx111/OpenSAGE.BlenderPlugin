@@ -150,12 +150,21 @@ def create_material_from_shader_material(context, name, shader_mat):
 
     principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=False)
 
-    for prop in shader_mat.properties:
-        if prop.name in para_map and prop.value is not None:
-            property_name_bpy = para_map[prop.name]
-            setattr(material, property_name_bpy, prop.to_property())
+    for w3dprop in shader_mat.properties:
+        if w3dprop.name in para_map and w3dprop.value is not None:
+            prop_name = para_map[w3dprop.name]
+
+            # retrieve vector length info to adjust the length
+            blprop = material.bl_rna.properties[prop_name]
+            if getattr(blprop, "array_length", 0) == 4:
+                setattr(material, prop_name, w3dprop.to_rgba())
+            elif getattr(blprop, "array_length", 0) == 3:
+                setattr(material, prop_name, w3dprop.to_rgb())
+            else:
+                setattr(material, prop_name, w3dprop.value)
+
         else:
-            context.warning('shader property not in list: ' + prop.name)
+            context.warning('shader property not in list: ' + w3dprop.name)
 
     return material, principled
 

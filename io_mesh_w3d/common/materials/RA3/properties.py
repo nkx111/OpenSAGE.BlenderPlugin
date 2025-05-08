@@ -37,14 +37,14 @@ Material.material_type = EnumProperty(
     name='Material Type',
     description='defines the type of the material',
     items=material_type_items,
-    default='DefaultW3D',
+    default='VERTEX_MATERIAL',
     update=OnResetMaterialType)
 
 Material.material_type_old = EnumProperty(
     name='Material Type Old',
     description='defines the type of the material',
     items=material_type_items,
-    default='DefaultW3D')
+    default='VERTEX_MATERIAL')
 
 Material.prelit_type = EnumProperty(
     name='Prelit Type',
@@ -548,10 +548,21 @@ def OnDamagedViewChanged(self:Material, context):
         self.blend_method = "OPAQUE"
 
 Material.preview_holes = BoolProperty(
-    name='Preview Damaged Model',
+    name='Preview Damaged Model 2',
     description='Preview holes on the model by showing damaged texture',
     default=False,
     update=OnDamagedViewChanged
+)
+
+def OnPreviewHolesForAll(self:Material, context):
+    for material in bpy.data.materials:
+        if material.material_type == self.material_type:
+            material.preview_holes = self.preview_holes_trigger
+Material.preview_holes_trigger = BoolProperty(
+    name='Preview Damaged Model',
+    description='Preview holes on the model by showing damaged texture',
+    default=False,
+    update=OnPreviewHolesForAll
 )
 
 Material.damaged_texture = StringProperty(
@@ -729,6 +740,7 @@ def OnScrollUV(self: Material, context):
     x0,y0,vx,vy = self.tex_coord_transform_0
     x1,y1,vx,vy = self.tex_coord_transform_1
 
+    print(self.name)
     mapping_tex_0 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_0")
     mapping_tex_1 = create_node_no_repeative(self, "ShaderNodeMapping", "mapping_tex_1")
 
@@ -798,10 +810,21 @@ Material.tex_coord_transform_1 = FloatVectorProperty(
     update=OnScrollUV)
 
 Material.preview_scrolling = BoolProperty(
-    name='Preview Texture Scrolling',
+    name='Preview Texture Scrolling 2',
     description='Simulate the scrolling effect of textures. Press Space-key to start animation, the uv coordinates will change with time.',
     default=False,
     update=OnScrollUV)
+
+def OnPreviewScrollingForAll(self:Material, context):
+    for material in bpy.data.materials:
+        if material.material_type == self.material_type:
+            material.preview_scrolling = self.preview_scrolling_trigger
+Material.preview_scrolling_trigger = BoolProperty(
+    name='Preview Texture Scrolling',
+    description='Simulate the scrolling effect of textures. Press Space-key to start animation, the uv coordinates will change with time.',
+    default=False,
+    update=OnPreviewScrollingForAll
+)
 
 Material.environment_texture = StringProperty(
     name='Environment texture',
@@ -1017,13 +1040,13 @@ Material.tex_coord_trans_v2 = FloatProperty(
 # Material.blend_method
 # Material.metallic
 
-Material.specular_intensity2 = FloatProperty(
+Material.specular_intensity_alt = FloatProperty(
     name='Shiness',
     default=1.0,
     min=0.0, max=50.0,
     description='Additional multiplier for the Specular Color. No effect in PBR. No effect in Blender. Please set to 1.')
 
-Material.specular_color2 = FloatVectorProperty(
+Material.specular_color_alt = FloatVectorProperty(
     name='Specular Color',
     subtype='COLOR',
     size=3,

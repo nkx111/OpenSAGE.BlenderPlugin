@@ -7,7 +7,7 @@ from bpy.types import Material, PropertyGroup
 
 material_parameter_map = {
 ("BuildingsSoviet", "BuildingsAllied", "BuildingsJapan", "BuildingsGeneric", "NormalMapped"): {
-    "__PreviewHoles": "preview_holes",
+    "__PreviewHoles": "preview_holes_trigger",
 
     "DiffuseTexture":"diffuse_texture",
     "NormalMap":"normal_texture",
@@ -17,7 +17,7 @@ material_parameter_map = {
 },
 
 ("BuildingsGenericDamageFill",) : {
-    "__PreviewHoles": "preview_holes",
+    "__PreviewHoles": "preview_holes_trigger",
 
     "DiffuseTexture":"diffuse_texture",
     "NormalMap":"normal_texture",
@@ -26,12 +26,12 @@ material_parameter_map = {
     "BumpScale":"bump_uv_scale",
     "AmbientColor":"ambient_color3",
     "DiffuseColor":"diffuse_color4",
-    "SpecularColor":"specular_color2",
-    "SpecularExponent":"specular_intensity2",
+    "SpecularColor":"specular_color_alt",
+    "SpecularExponent":"specular_intensity_alt",
     "EnvMult":"environment_mult"
 },
 
-("ObjectsSoviet", "ObjectsAllied", "ObjectsJapan", "ObjectsGeneric", "ObjectsAlliedTread", "ObjectsTerrain"):{
+("ObjectsSoviet", "ObjectsAllied", "ObjectsJapan", "ObjectsAlliedTread", "ObjectsTerrain"):{
     "DiffuseTexture":"diffuse_texture",
     "NormalMap":"normal_texture",
     "SpecMap":"spec_texture",
@@ -39,11 +39,25 @@ material_parameter_map = {
     "AlphaTestEnable":"alpha_test",
 },
 
+("ObjectsGeneric",):{
+    "DiffuseTexture":"diffuse_texture",
+    "NormalMap":"normal_texture",
+    "SpecMap":"spec_texture",
+    "EnvMult":"environment_mult",
+    "BumpScale":"bump_uv_scale",
+    "AmbientColor":"ambient_color3",
+    "DiffuseColor":"diffuse_color4",
+    "SpecularColor":"specular_color_alt",
+    "SpecularExponent":"specular_intensity_alt",
+    "EnvMult":"environment_mult",
+    "AlphaTestEnable":"alpha_test",
+},
+
 ("Infantry", "Tree", "BasicW3D"):{
     "ColorAmbient":"ambient_color3",
     "ColorDiffuse":"diffuse_color3",
-    "ColorSpecular":"specular_color2",
-    "Shininess":"specular_intensity2",
+    "ColorSpecular":"specular_color_alt",
+    "Shininess":"specular_intensity_alt",
     "ColorEmissive":"emission_color",
     "Texture_0":"texture_0",
     "DepthWriteEnable":"depth_write",
@@ -55,8 +69,8 @@ material_parameter_map = {
 ("DefaultW3D",):{
     "ColorAmbient":"ambient_color3",
     "ColorDiffuse":"diffuse_color3",
-    "ColorSpecular":"specular_color2",
-    "Shininess":"specular_intensity2",
+    "ColorSpecular":"specular_color_alt",
+    "Shininess":"specular_intensity_alt",
     "ColorEmissive":"emission_color",
     "EmissiveHDRMultipler":"emission_mult",
     "Opacity":"alpha",
@@ -78,7 +92,7 @@ material_parameter_map = {
     "TexCoordMapper_1":"tex_coord_mapper_1",
     "TexCoordTransform_1":"tex_coord_transform_1",
 
-    "__PreviewScrolling": "preview_scrolling"
+    "__PreviewScrolling": "preview_scrolling_trigger"
 },
 
 ("Simple",):{
@@ -117,7 +131,7 @@ material_parameter_map = {
     "TexCoordTransformU_2": "tex_coord_trans_u2",
     "TexCoordTransformV_2": "tex_coord_trans_v2",
 
-    "__PreviewScrolling": "preview_scrolling",
+    "__PreviewScrolling": "preview_scrolling_trigger",
 },
 
 
@@ -140,20 +154,40 @@ material_parameter_map = {
     "UseRecolorColors":"use_recolor",
     "CullingEnable":"use_backface_culling",
 
-    "__PreviewScrolling": "preview_scrolling",
+    "__PreviewScrolling": "preview_scrolling_trigger",
 },
 
 ("VERTEX_MATERIAL",):{}
 }
+
+
+material_compatible_map = {
+    ("ObjectsGDI","ObjectsAlien","ObjectsHuman","ObjectsNOD", "cnc4_object_nod_infantry","cnc4_object_nod","cnc4_object_gdi"):"ObjectsAllied",
+    ("ObjectsGenericEnvMap", "cnc4_object", "cnc4_debris_fadeoff"):"ObjectsGeneric",
+    ("cnc4_object_gdi_proceduraldamage","cnc4_object_nod_proceduraldamage","cnc4_object_proceduraldamage"):"BuildingsGenericDamageFill",
+    ("cnc4_vfx",) : "DefaultW3D"
+}
+
 
 def get_material_parameter_map(material_name, context = None):
     for keys in material_parameter_map:
         for key in keys:
             if str.upper(material_name) == str.upper(key):
                 return key, material_parameter_map[keys]
-    print(f'shader class not in defined: {material_name}. Use DefaultW3D!')
+            
+    for keys in material_compatible_map:
+        for key in keys:
+            if str.upper(material_name) == str.upper(key):
+                msg = f'Use compatible shader from RA3 for imported shader: "{material_name}"'
+                print(msg)
+                if context is not None:
+                    context.info(msg)
+                return get_material_parameter_map(material_compatible_map[keys])
+
+    msg = f'shader class not in defined: {material_name}. Use DefaultW3D!'
+    print(msg)
     if context is not None:
-        context.error(f'shader class not in defined: {material_name}. Use DefaultW3D!')
+        context.error(msg)
     return "DefaultW3D", material_parameter_map[("DefaultW3D",)]
 
 material_type_items = []
