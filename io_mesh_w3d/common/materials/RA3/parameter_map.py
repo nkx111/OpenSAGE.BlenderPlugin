@@ -7,7 +7,7 @@ from bpy.types import Material, PropertyGroup
 
 material_parameter_map = {
 ("BuildingsSoviet", "BuildingsAllied", "BuildingsJapan", "BuildingsGeneric", "NormalMapped"): {
-    "__PreviewHoles": "preview_holes_trigger",
+    "__Preview": "preview_holes_trigger",
 
     "DiffuseTexture":"diffuse_texture",
     "NormalMap":"normal_texture",
@@ -17,7 +17,7 @@ material_parameter_map = {
 },
 
 ("BuildingsGenericDamageFill",) : {
-    "__PreviewHoles": "preview_holes_trigger",
+    "__Preview": "preview_holes_trigger",
 
     "DiffuseTexture":"diffuse_texture",
     "NormalMap":"normal_texture",
@@ -92,7 +92,7 @@ material_parameter_map = {
     "TexCoordMapper_1":"tex_coord_mapper_1",
     "TexCoordTransform_1":"tex_coord_transform_1",
 
-    "__PreviewScrolling": "preview_scrolling_trigger"
+    "__Preview": "preview_scrolling_trigger"
 },
 
 ("Simple",):{
@@ -108,16 +108,18 @@ material_parameter_map = {
     "BaseTexture": "diffuse_texture"
 },
 
-# ("TreeSway"):{
-#     "DiffuseTexture":"diffuse_texture",
-#     "AmbientColor":"ambient_color",
-#     "DiffuseColor":"diffuse_color4",
-#     "AlphaTestEnable":"alpha_test",
-#     "SwayEnable":"",
-#     "Amp1":"",
-#     "Freq1":"",
-#     "Phase1":"",
-# },
+("TreeSway",):{
+    "DiffuseTexture":"diffuse_texture",
+    "AmbientColor":"ambient_color3",
+    "DiffuseColor":"diffuse_color4",
+    "AlphaTestEnable":"alpha_test",
+    "SwayEnable":"sway_enable",
+    "Amp1":"sway_amp",
+    "Freq1":"sway_freq",
+    "Phase1":"sway_phase",
+
+    "__Preview": "preview_sway_trigger",
+},
 
 ("MuzzleFlash",):{
     "ColorEmissive": "emission_color",
@@ -131,7 +133,7 @@ material_parameter_map = {
     "TexCoordTransformU_2": "tex_coord_trans_u2",
     "TexCoordTransformV_2": "tex_coord_trans_v2",
 
-    "__PreviewScrolling": "preview_scrolling_trigger",
+    "__Preview": "preview_scrolling_trigger",
 },
 
 
@@ -154,7 +156,7 @@ material_parameter_map = {
     "UseRecolorColors":"use_recolor",
     "CullingEnable":"use_backface_culling",
 
-    "__PreviewScrolling": "preview_scrolling_trigger",
+    "__Preview": "preview_scrolling_trigger",
 },
 
 ("VERTEX_MATERIAL",):{}

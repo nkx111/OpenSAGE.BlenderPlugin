@@ -191,12 +191,12 @@ def create_texture_node(material, path_list, file, name = None):
     node.name = name
     return node
 
-def create_node_no_repeative(material, type, name):
-    for node in material.node_tree.nodes:
+def create_node_no_repeative(nodes, type, name):
+    for node in nodes:
         if node.name == name:
             print(f"Reusing existing node: {node.name}")
             return node
-    new_node = material.node_tree.nodes.new(type)
+    new_node = nodes.new(type)
     new_node.name = name
     return new_node
 
