@@ -31,7 +31,17 @@ material_parameter_map = {
     "EnvMult":"environment_mult"
 },
 
-("ObjectsSoviet", "ObjectsAllied", "ObjectsJapan", "ObjectsAlliedTread", "ObjectsTerrain"):{
+("ObjectsSoviet", "ObjectsAllied", "ObjectsJapan", "ObjectsTerrain"):{
+    "DiffuseTexture":"diffuse_texture",
+    "NormalMap":"normal_texture",
+    "SpecMap":"spec_texture",
+    "EnvMult":"environment_mult",
+    "AlphaTestEnable":"alpha_test",
+},
+
+("ObjectsAlliedTread",):{
+    "__Preview": "preview_scrolling_trigger",
+
     "DiffuseTexture":"diffuse_texture",
     "NormalMap":"normal_texture",
     "SpecMap":"spec_texture",

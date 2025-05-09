@@ -458,10 +458,11 @@ Material.sampler_clamp_uv_no_mip_1 = FloatVectorProperty(
     description='Sampler clampU clampV no mipmap 1')
 
 def OnDiffuseTextureChanged(self, context):
-    principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
-    tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture)
-    self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
-    self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
+    if self.diffuse_texture != "":
+        principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
+        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture, "tex_diffuse")
+        self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
+        self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
 Material.diffuse_texture = StringProperty(
     name='Diffuse Texture',
     description='The main color texture. No Alpha channel',
@@ -469,14 +470,15 @@ Material.diffuse_texture = StringProperty(
     update=OnDiffuseTextureChanged)
 
 def OnSpecTextureChanged(self, context):
-    principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
-    nodes = self.node_tree.nodes
-    tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.spec_texture)
-    spec_sepa_node = create_node_no_repeative(nodes, "ShaderNodeSeparateColor", "spec_sepa_node")
-    self.node_tree.links.new(tex_node.outputs["Color"], spec_sepa_node.inputs["Color"])
-    self.node_tree.links.new(spec_sepa_node.outputs["Red"], principled.node_principled_bsdf.inputs["Specular"])
-    self.node_tree.links.new(spec_sepa_node.outputs["Green"], principled.node_principled_bsdf.inputs["Sheen"])
-    self.node_tree.links.new(spec_sepa_node.outputs["Blue"], principled.node_principled_bsdf.inputs["Clearcoat"])
+    if self.spec_texture != "":
+        principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
+        nodes = self.node_tree.nodes
+        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.spec_texture, "tex_spec")
+        spec_sepa_node = create_node_no_repeative(nodes, "ShaderNodeSeparateColor", "spec_sepa_node")
+        self.node_tree.links.new(tex_node.outputs["Color"], spec_sepa_node.inputs["Color"])
+        self.node_tree.links.new(spec_sepa_node.outputs["Red"], principled.node_principled_bsdf.inputs["Specular"])
+        self.node_tree.links.new(spec_sepa_node.outputs["Green"], principled.node_principled_bsdf.inputs["Sheen"])
+        self.node_tree.links.new(spec_sepa_node.outputs["Blue"], principled.node_principled_bsdf.inputs["Clearcoat"])
 Material.spec_texture = StringProperty(
     name='Specular Texture',
     description='R channel: defines Specular Intensity; G channel: defines glassness; B channel: defines faction color position',
@@ -484,50 +486,51 @@ Material.spec_texture = StringProperty(
     update=OnSpecTextureChanged)
 
 def OnNrmTextureChanged(self:Material, context):
-    principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
-    nodes = self.node_tree.nodes
-    tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.normal_texture)
+    if self.normal_texture != "":
+        principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
+        nodes = self.node_tree.nodes
+        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.normal_texture, "tex_nrm")
 
-    separate_rgb = create_node_no_repeative(nodes, "ShaderNodeSeparateColor", "separate_rgb")
-    self.node_tree.links.new(tex_node.outputs['Color'], separate_rgb.inputs['Color'])
+        separate_rgb = create_node_no_repeative(nodes, "ShaderNodeSeparateColor", "separate_rgb")
+        self.node_tree.links.new(tex_node.outputs['Color'], separate_rgb.inputs['Color'])
 
-    # X^2
-    math_x2 = create_node_no_repeative(nodes, 'ShaderNodeMath', "math_x2")
-    math_x2.operation = 'POWER'
-    math_x2.inputs[1].default_value = 2.0
-    self.node_tree.links.new(separate_rgb.outputs['Red'], math_x2.inputs[0])
+        # X^2
+        math_x2 = create_node_no_repeative(nodes, 'ShaderNodeMath', "math_x2")
+        math_x2.operation = 'POWER'
+        math_x2.inputs[1].default_value = 2.0
+        self.node_tree.links.new(separate_rgb.outputs['Red'], math_x2.inputs[0])
 
-    # Y^2
-    math_y2 = create_node_no_repeative(nodes, 'ShaderNodeMath', "math_y2")
-    math_y2.operation = 'POWER'
-    math_y2.inputs[1].default_value = 2.0
-    self.node_tree.links.new(separate_rgb.outputs['Green'], math_y2.inputs[0])
+        # Y^2
+        math_y2 = create_node_no_repeative(nodes, 'ShaderNodeMath', "math_y2")
+        math_y2.operation = 'POWER'
+        math_y2.inputs[1].default_value = 2.0
+        self.node_tree.links.new(separate_rgb.outputs['Green'], math_y2.inputs[0])
 
-    # X^2 + Y^2
-    math_add = create_node_no_repeative(nodes, 'ShaderNodeMath', "math_add")
-    math_add.operation = 'ADD'
-    self.node_tree.links.new(math_x2.outputs['Value'], math_add.inputs[0])
-    self.node_tree.links.new(math_y2.outputs['Value'], math_add.inputs[1])
+        # X^2 + Y^2
+        math_add = create_node_no_repeative(nodes, 'ShaderNodeMath', "math_add")
+        math_add.operation = 'ADD'
+        self.node_tree.links.new(math_x2.outputs['Value'], math_add.inputs[0])
+        self.node_tree.links.new(math_y2.outputs['Value'], math_add.inputs[1])
 
-    # 1 - (X^2 + Y^2)
-    math_subtract = create_node_no_repeative(nodes, 'ShaderNodeMath', "math_subtract")
-    math_subtract.operation = 'SUBTRACT'
-    math_subtract.inputs[0].default_value = 1.0
-    self.node_tree.links.new(math_add.outputs['Value'], math_subtract.inputs[1])
+        # 1 - (X^2 + Y^2)
+        math_subtract = create_node_no_repeative(nodes, 'ShaderNodeMath', "math_subtract")
+        math_subtract.operation = 'SUBTRACT'
+        math_subtract.inputs[0].default_value = 1.0
+        self.node_tree.links.new(math_add.outputs['Value'], math_subtract.inputs[1])
 
-    # sqrt(1 - X^2 - Y^2)
-    math_sqrt = create_node_no_repeative(nodes, 'ShaderNodeMath', "math_sqrt")
-    math_sqrt.operation = 'SQRT'
-    self.node_tree.links.new(math_subtract.outputs['Value'], math_sqrt.inputs[0])
+        # sqrt(1 - X^2 - Y^2)
+        math_sqrt = create_node_no_repeative(nodes, 'ShaderNodeMath', "math_sqrt")
+        math_sqrt.operation = 'SQRT'
+        self.node_tree.links.new(math_subtract.outputs['Value'], math_sqrt.inputs[0])
 
-    combine_rgb = create_node_no_repeative(nodes, 'ShaderNodeCombineRGB', "combine_rgb")
-    self.node_tree.links.new(separate_rgb.outputs['Red'], combine_rgb.inputs['R'])  # X
-    self.node_tree.links.new(separate_rgb.outputs['Green'], combine_rgb.inputs['G'])  # Y
-    self.node_tree.links.new(math_sqrt.outputs['Value'], combine_rgb.inputs['B'])  # Z
+        combine_rgb = create_node_no_repeative(nodes, 'ShaderNodeCombineRGB', "combine_rgb")
+        self.node_tree.links.new(separate_rgb.outputs['Red'], combine_rgb.inputs['R'])  # X
+        self.node_tree.links.new(separate_rgb.outputs['Green'], combine_rgb.inputs['G'])  # Y
+        self.node_tree.links.new(math_sqrt.outputs['Value'], combine_rgb.inputs['B'])  # Z
 
-    nrm_node = create_node_no_repeative(nodes, "ShaderNodeNormalMap", "nrm_node")
-    self.node_tree.links.new(combine_rgb.outputs['Image'], nrm_node.inputs["Color"])
-    self.node_tree.links.new(nrm_node.outputs["Normal"], principled.node_principled_bsdf.inputs["Normal"])
+        nrm_node = create_node_no_repeative(nodes, "ShaderNodeNormalMap", "nrm_node")
+        self.node_tree.links.new(combine_rgb.outputs['Image'], nrm_node.inputs["Color"])
+        self.node_tree.links.new(nrm_node.outputs["Normal"], principled.node_principled_bsdf.inputs["Normal"])
 
 Material.normal_texture = StringProperty(
     name='Normal Map',
@@ -536,21 +539,22 @@ Material.normal_texture = StringProperty(
     update=OnNrmTextureChanged)
 
 def OnDamagedViewChanged(self:Material, context):
-    principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
-    nodes = self.node_tree.nodes
-    if self.preview_holes and self.damaged_texture!="":
-        damage_tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.damaged_texture)
-        damage_tex_uv_node = create_node_no_repeative(nodes, "ShaderNodeUVMap", "damage_tex_uv_node")
-        damage_tex_uv_node.uv_map = "UVMap.001"
-        self.node_tree.links.new(damage_tex_uv_node.outputs['UV'], damage_tex_node.inputs['Vector'])
-        self.node_tree.links.new(damage_tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
-        self.blend_method = "HASHED"
-    else:
-        inputs = principled.node_principled_bsdf.inputs["Alpha"]
-        if inputs.is_linked:
-            link = inputs.links[0]
-            self.node_tree.links.remove(link)
-        self.blend_method = "OPAQUE"
+    if self.damaged_texture != "":
+        principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
+        nodes = self.node_tree.nodes
+        if self.preview_holes and self.damaged_texture!="":
+            damage_tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.damaged_texture)
+            damage_tex_uv_node = create_node_no_repeative(nodes, "ShaderNodeUVMap", "damage_tex_uv_node")
+            damage_tex_uv_node.uv_map = "UVMap.001"
+            self.node_tree.links.new(damage_tex_uv_node.outputs['UV'], damage_tex_node.inputs['Vector'])
+            self.node_tree.links.new(damage_tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
+            self.blend_method = "HASHED"
+        else:
+            inputs = principled.node_principled_bsdf.inputs["Alpha"]
+            if inputs.is_linked:
+                link = inputs.links[0]
+                self.node_tree.links.remove(link)
+            self.blend_method = "OPAQUE"
 
 Material.preview_holes = BoolProperty(
     name='Preview Damaged Model 2',
@@ -677,6 +681,40 @@ def UnScrollAndRotateUV_Muzzle(self, context):
     tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
     self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
 
+
+# Tread
+def ScrollAndRotateUV_Tread(self, context):
+    nodes = self.node_tree.nodes
+
+    uv_tex_0 = create_node_no_repeative(nodes, "ShaderNodeUVMap", "uv_tex_0")
+    uv_tex_0.uv_map = "UVMap"
+    mapping_tread = create_node_no_repeative(nodes, "ShaderNodeMapping", "mapping_tread")
+    self.node_tree.links.new(uv_tex_0.outputs['UV'], mapping_tread.inputs['Vector'])
+
+    value_node_scroll = create_node_no_repeative(nodes, "ShaderNodeValue", "value_node_scroll")
+    value_node_scroll_driver = value_node_scroll.outputs['Value'].driver_add('default_value')
+    value_node_scroll_driver.driver.type = 'SCRIPTED'
+    value_node_scroll_driver.driver.expression = f'- frame / 30'
+
+    combine_node_scroll = create_node_no_repeative(nodes, "ShaderNodeCombineXYZ", "combine_node_scroll")
+    self.node_tree.links.new(value_node_scroll.outputs['Value'], combine_node_scroll.inputs['X'])
+    self.node_tree.links.new(combine_node_scroll.outputs['Vector'], mapping_tread.inputs['Location'])
+
+    tex_diffuse = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture, "tex_diffuse")
+    self.node_tree.links.new(mapping_tread.outputs['Vector'], tex_diffuse.inputs['Vector'])
+    tex_spec = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture, "tex_spec")
+    self.node_tree.links.new(mapping_tread.outputs['Vector'], tex_spec.inputs['Vector'])    
+    tex_nrm = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture, "tex_nrm")
+    self.node_tree.links.new(mapping_tread.outputs['Vector'], tex_nrm.inputs['Vector'])
+
+def UnScrollAndRotateUV_Tread(self, context):
+    nodes = self.node_tree.nodes
+    mapping_tread = create_node_no_repeative(nodes, "ShaderNodeMapping", "mapping_tread")
+    inputs = mapping_tread.inputs["Location"]
+    if inputs.is_linked:
+        link = inputs.links[0]
+        self.node_tree.links.remove(link)
+
 # FXLightning
 def ScrollAndRotateUV_Lightning(self, context):
     nodes = self.node_tree.nodes
@@ -766,6 +804,11 @@ def OnScrollUV(self: Material, context):
             ScrollAndRotateUV_Muzzle(self,context)
         else:
             UnScrollAndRotateUV_Muzzle(self,context)
+    elif self.material_type == "ObjectsAlliedTread":
+        if self.preview_scrolling:
+            ScrollAndRotateUV_Tread(self,context)
+        else:
+            UnScrollAndRotateUV_Tread(self,context)
     elif self.material_type in ["FXLightning","FXProtonCollider"]:
         if self.preview_scrolling:
             ScrollAndRotateUV_Lightning(self,context)
