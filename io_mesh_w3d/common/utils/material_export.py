@@ -107,14 +107,17 @@ def append_property(shader_mat, type, name, value, default=None):
 
 # "para name"         "prop name"
 # "DiffuseTexture"    "diffuse_texture"
-def make_property_from_blender_property(paraname, propname, material:Material):
+
+
+def make_property_from_blender_property(paraname, propname, material: Material):
     prop = material.bl_rna.properties[propname]
     type = 0
     value = getattr(material, propname)
     if prop.__class__.__name__ == "StringProperty":
         type = STRING_PROPERTY
     elif prop.__class__.__name__ == "FloatProperty" or prop.__class__.__name__ == "FloatVectorProperty":
-        if (not hasattr(prop, "is_array")) or (hasattr(prop, "is_array") and not getattr(prop, "is_array", False)) or (hasattr(prop, "is_array") and prop.array_length == 0):
+        if (not hasattr(prop, "is_array")) or (hasattr(prop, "is_array") and not getattr(
+                prop, "is_array", False)) or (hasattr(prop, "is_array") and prop.array_length == 0):
             type = FLOAT_PROPERTY
         elif hasattr(prop, "is_array") and getattr(prop, "is_array", False):
             type = FLOAT_PROPERTY + prop.array_length - 1
@@ -128,22 +131,23 @@ def make_property_from_blender_property(paraname, propname, material:Material):
         return None
     return ShaderMaterialProperty(type=type, name=paraname, value=value)
 
+
 def to_vec(color):
     return Vector((color[0], color[1], color[2], color[3] if len(color) > 3 else 1.0))
 
 
-def retrieve_shader_material(context, material:Material, principled, w3x=False):
+def retrieve_shader_material(context, material: Material, principled, w3x=False):
     material_type = material.material_type
     # shadername,      {"para name"     : "prop name" }
     # "ObjectsAllied", {"DiffuseTexture": "diffuse_texture"}
-    shadername, para_map = get_material_parameter_map(material_type) 
+    shadername, para_map = get_material_parameter_map(material_type)
     shader_mat = ShaderMaterial(
         header=ShaderMaterialHeader(
-            type_name=shadername+".fx", technique=material.technique),
+            type_name=shadername + ".fx", technique=material.technique),
         properties=[])
-    
+
     for paraname, propname in para_map.items():
-        if '__' in paraname: # skip plugin helper preperties
+        if '__' in paraname:  # skip plugin helper preperties
             continue
         prop_w3d = make_property_from_blender_property(paraname, propname, material)
         if prop_w3d is not None:

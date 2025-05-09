@@ -89,7 +89,7 @@ class TestCustomProperties(TestCase):
 
         # other props
 
-        ##### DO WE REALLY NEED TO ASSERT THESE CUSTOM PREPERTIES? 
+        # DO WE REALLY NEED TO ASSERT THESE CUSTOM PREPERTIES?
 
         # self.assertEqual(0.0, mat.translucency)
         # mat.translucency = -1.0
@@ -104,8 +104,6 @@ class TestCustomProperties(TestCase):
         # self.assertEqual('', mat.vm_args_1)
         # mat.vm_args_1 = 'lorem ipsum'
         # self.assertEqual('lorem ipsum', mat.vm_args_1)
-
-
 
         # self.assertEqual((1.0, 1.0, 1.0, 0.0), to_vec4(mat.ambient_color4))
         # mat.ambient = (-1.0, -1.0, -1.0, -1.0)

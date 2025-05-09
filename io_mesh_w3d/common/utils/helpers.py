@@ -141,6 +141,7 @@ def find_texture(context, file, name=None):
     img.alpha_mode = 'STRAIGHT'
     return img
 
+
 def find_texture_from_path(path_list, file):
     pure_name = file.rsplit('.', 1)[0]
 
@@ -172,7 +173,8 @@ def find_texture_from_path(path_list, file):
     img.alpha_mode = 'STRAIGHT'
     return img
 
-def create_texture_node(material, path_list, file, name = None):
+
+def create_texture_node(material, path_list, file, name=None):
     if name is None:
         name = file
     path_list_pref = []
@@ -190,6 +192,7 @@ def create_texture_node(material, path_list, file, name = None):
     node.image = img
     node.name = name
     return node
+
 
 def create_node_no_repeative(nodes, type, name):
     for node in nodes:
