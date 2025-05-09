@@ -138,6 +138,8 @@ W3D_CHUNK_TANGENTS = 0x60
 W3D_CHUNK_BITANGENTS = 0x61
 
 # avoid naming collapse
+
+
 class W3DMesh:
     def __init__(self):
         self.header = None
