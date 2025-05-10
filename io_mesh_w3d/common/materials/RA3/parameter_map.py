@@ -169,6 +169,35 @@ material_parameter_map = {
     "__Preview": "preview_scrolling_trigger",
 },
 
+("Lightning",):{
+    "Texture_0":"texture_0",
+    "ColorDiffuse":"diffuse_color3",
+    "HDRMultiplier":"emission_mult",
+    "MultiTextureEnable": "multi_texture_enable",
+    "DiffuseCoordOffset": "diffuse_coord_offset",
+    "MultiplyBlendEnable":"multiply_blend_enable",
+    "EdgeFadeOut":"edge_fade_out",
+    "Texture_1":"texture_1",
+    "UniqueWorldCoordEnable":"use_world",
+    "UniqueWorldCoordScalar":"unique_coord_scalar",
+    "UniqueWorldCoordStrength":"unique_coord_strength",
+    "DisplaceScalar":"disp_scalar",
+    "DisplaceAmp":"disp_amp",
+    "DisplaceDivergenceAngle":"disp_angle",
+    "DisplaceSpeed":"disp_speed",
+    "UseRecolorColors":"use_recolor",
+    "CullingEnable":"use_backface_culling",
+
+    "__Preview": "preview_scrolling_trigger",
+},
+
+("DistortingObject", ):{
+    "NormalMap":"normal_texture",
+    "TexCoordTransform_0": "tex_coord_transform_0",
+    "BumpScale":"bump_uv_scale",
+    "AlphaTestEnable":"alpha_test",
+},
+
 ("VERTEX_MATERIAL",):{}
 }
 

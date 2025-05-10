@@ -194,7 +194,7 @@ def OnRenderingChanged(self:Material, context):
                 self.show_transparent_back = True
             else:
                 self.blend_method = "CLIP"  
-    elif self.material_type in ["MuzzleFlash","FXLightning","FXProtonCollider"]:
+    elif self.material_type in ["MuzzleFlash","FXLightning", "Lightning", "FXProtonCollider"]:
         self.blend_method = "BLEND"    
         self.show_transparent_back = True
     else:
@@ -209,7 +209,7 @@ def OnTexture01Changed(self:Material, context):
     OnRenderingChanged(self,context)
     principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
     nodes = self.node_tree.nodes
-    if (self.num_textures == 1 or self.texture_1 == "" or self.material_type in ["MuzzleFlash", "FXLightning", "FXProtonCollider"]) and self.texture_0 != "":
+    if (self.num_textures == 1 or self.texture_1 == "" or self.material_type in ["MuzzleFlash", "FXLightning", "Lightning", "FXProtonCollider"]) and self.texture_0 != "":
         tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
         uv_tex_0 = create_node_no_repeative(nodes, "ShaderNodeUVMap", "uv_tex_0")
         uv_tex_0.uv_map = "UVMap"
@@ -239,7 +239,7 @@ def OnTexture01Changed(self:Material, context):
         color_mix_node_diffuse.inputs[1].default_value = (*self.diffuse_color3, 1.0)  # Convert to 4D vector
         self.node_tree.links.new(tex_node.outputs["Color"], color_mix_node_diffuse.inputs[2])
         self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
-        if self.material_type in ["FXLightning","FXProtonCollider"]:
+        if self.material_type in ["FXLightning", "Lightning", "FXProtonCollider"]:
             self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])
         
     elif self.texture_0 != "" and self.texture_1 != "" and self.num_textures == 2:
@@ -809,7 +809,7 @@ def OnScrollUV(self: Material, context):
             ScrollAndRotateUV_Tread(self,context)
         else:
             UnScrollAndRotateUV_Tread(self,context)
-    elif self.material_type in ["FXLightning","FXProtonCollider"]:
+    elif self.material_type in ["FXLightning", "Lightning", "FXProtonCollider"]:
         if self.preview_scrolling:
             ScrollAndRotateUV_Lightning(self,context)
         else:
