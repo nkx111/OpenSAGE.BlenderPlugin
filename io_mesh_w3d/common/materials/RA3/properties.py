@@ -214,8 +214,9 @@ def OnTexture01Changed(self:Material, context):
         uv_tex_0 = create_node_no_repeative(nodes, "ShaderNodeUVMap", "uv_tex_0")
         uv_tex_0.uv_map = "UVMap"
         mapping_tex_0 = create_node_no_repeative(nodes, "ShaderNodeMapping", "mapping_tex_0")
-        x0,y0,vx,vy = self.tex_coord_transform_0
-        mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
+        if self.tex_coord_mapper_0 == 1:
+            x0,y0,vx,vy = self.tex_coord_transform_0
+            mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
         self.node_tree.links.new(uv_tex_0.outputs['UV'], mapping_tex_0.inputs['Vector'])
         self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
         if self.material_type != "Infantry":
@@ -273,14 +274,16 @@ def OnTexture01Changed(self:Material, context):
         uv_tex_0 = create_node_no_repeative(nodes, "ShaderNodeUVMap", "uv_tex_0")
         uv_tex_0.uv_map = "UVMap"
         mapping_tex_0 = create_node_no_repeative(nodes, "ShaderNodeMapping", "mapping_tex_0")
-        x0,y0,vx,vy = self.tex_coord_transform_0
-        mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
+        if self.tex_coord_mapper_0 == 1:
+            x0,y0,vx,vy = self.tex_coord_transform_0
+            mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
         self.node_tree.links.new(uv_tex_0.outputs['UV'], mapping_tex_0.inputs['Vector'])
         uv_tex_1 = create_node_no_repeative(nodes, "ShaderNodeUVMap", "uv_tex_1")
         uv_tex_1.uv_map = "UVMap.001"
         mapping_tex_1 = create_node_no_repeative(nodes, "ShaderNodeMapping", "mapping_tex_1")
-        x1,y1,vx,vy = self.tex_coord_transform_0
-        mapping_tex_1.inputs["Scale"].default_value = (x1,y1,1)
+        if self.tex_coord_mapper_1 == 1:
+            x1,y1,vx,vy = self.tex_coord_transform_0
+            mapping_tex_1.inputs["Scale"].default_value = (x1,y1,1)
         self.node_tree.links.new(uv_tex_1.outputs['UV'], mapping_tex_1.inputs['Vector'])
 
         self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
@@ -796,9 +799,6 @@ def OnScrollUV(self: Material, context):
     mapping_tex_0 = create_node_no_repeative(nodes, "ShaderNodeMapping", "mapping_tex_0")
     mapping_tex_1 = create_node_no_repeative(nodes, "ShaderNodeMapping", "mapping_tex_1")
 
-    mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
-    mapping_tex_1.inputs["Scale"].default_value = (x1,y1,1)
-
     if self.material_type == "MuzzleFlash":
         if self.preview_scrolling:
             ScrollAndRotateUV_Muzzle(self,context)
@@ -816,11 +816,13 @@ def OnScrollUV(self: Material, context):
             UnScrollAndRotateUV_Lightning(self,context)
     else:
         if self.tex_coord_mapper_0 == 1 and self.preview_scrolling:
+            mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
             ScrollUV_Tex0(self, context)
         else:
             UnScrollUV_Tex0(self,context)
 
         if self.tex_coord_mapper_1 == 1 and self.preview_scrolling:
+            mapping_tex_1.inputs["Scale"].default_value = (x1,y1,1)
             ScrollUV_Tex1(self, context)
         else:
             UnScrollUV_Tex1(self,context)
