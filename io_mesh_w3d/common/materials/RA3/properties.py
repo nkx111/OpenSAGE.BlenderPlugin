@@ -241,8 +241,11 @@ def OnTexture01Changed(self:Material, context):
         self.node_tree.links.new(tex_node.outputs["Color"], color_mix_node_diffuse.inputs[2])
         self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
         if self.material_type in ["FXLightning", "Lightning", "FXProtonCollider"]:
-            self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])
-        
+            if bpy.app.version >= (4, 0, 0):
+                self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Emission Color"])
+            else:
+                self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])        
+    
     elif self.texture_0 != "" and self.texture_1 != "" and self.num_textures == 2:
         tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
         tex_node1 = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_1, name="tex_node1")
@@ -334,8 +337,6 @@ Material.diffuse_color3 = FloatVectorProperty(
 def OnEmissionMultChanged(self, context):
     principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
     principled.emission_strength = self.emission_mult
-
-
 Material.emission_mult = FloatProperty(
     name='Emissive HDR Multipler',
     default=1.0,
@@ -348,7 +349,11 @@ def OnEmissionColorChanged(self, context):
     nodes = self.node_tree.nodes
     emission_color_node = create_node_no_repeative(nodes, "ShaderNodeRGB", "emission_color_node")
     emission_color_node.outputs["Color"].default_value = (*self.emission_color, 1.0)  # Convert to 4D vector
-    self.node_tree.links.new(emission_color_node.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])
+    if bpy.app.version >= (4, 0, 0):
+        self.node_tree.links.new(emission_color_node.outputs["Color"], principled.node_principled_bsdf.inputs["Emission Color"])
+        principled.emission_strength = self.emission_mult
+    else:
+        self.node_tree.links.new(emission_color_node.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])
 Material.emission_color = FloatVectorProperty(
     name='Emission Color',
     subtype='COLOR',
@@ -479,9 +484,14 @@ def OnSpecTextureChanged(self, context):
         tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.spec_texture, "tex_spec")
         spec_sepa_node = create_node_no_repeative(nodes, "ShaderNodeSeparateColor", "spec_sepa_node")
         self.node_tree.links.new(tex_node.outputs["Color"], spec_sepa_node.inputs["Color"])
-        self.node_tree.links.new(spec_sepa_node.outputs["Red"], principled.node_principled_bsdf.inputs["Specular"])
-        self.node_tree.links.new(spec_sepa_node.outputs["Green"], principled.node_principled_bsdf.inputs["Sheen"])
-        self.node_tree.links.new(spec_sepa_node.outputs["Blue"], principled.node_principled_bsdf.inputs["Clearcoat"])
+        if bpy.app.version >= (4, 0, 0):
+            self.node_tree.links.new(spec_sepa_node.outputs["Red"], principled.node_principled_bsdf.inputs["Specular IOR Level"])
+            self.node_tree.links.new(spec_sepa_node.outputs["Green"], principled.node_principled_bsdf.inputs["Sheen Weight"])
+            self.node_tree.links.new(spec_sepa_node.outputs["Blue"], principled.node_principled_bsdf.inputs["Coat Weight"])          
+        else:
+            self.node_tree.links.new(spec_sepa_node.outputs["Red"], principled.node_principled_bsdf.inputs["Specular"])
+            self.node_tree.links.new(spec_sepa_node.outputs["Green"], principled.node_principled_bsdf.inputs["Sheen"])
+            self.node_tree.links.new(spec_sepa_node.outputs["Blue"], principled.node_principled_bsdf.inputs["Clearcoat"])
 Material.spec_texture = StringProperty(
     name='Specular Texture',
     description='R channel: defines Specular Intensity; G channel: defines glassness; B channel: defines faction color position',
@@ -798,6 +808,11 @@ def OnScrollUV(self: Material, context):
     print(self.name)
     mapping_tex_0 = create_node_no_repeative(nodes, "ShaderNodeMapping", "mapping_tex_0")
     mapping_tex_1 = create_node_no_repeative(nodes, "ShaderNodeMapping", "mapping_tex_1")
+    if self.tex_coord_mapper_0 == 1:
+        mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
+
+    if self.tex_coord_mapper_1 == 1:
+        mapping_tex_1.inputs["Scale"].default_value = (x1,y1,1)
 
     if self.material_type == "MuzzleFlash":
         if self.preview_scrolling:
@@ -816,13 +831,11 @@ def OnScrollUV(self: Material, context):
             UnScrollAndRotateUV_Lightning(self,context)
     else:
         if self.tex_coord_mapper_0 == 1 and self.preview_scrolling:
-            mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
             ScrollUV_Tex0(self, context)
         else:
             UnScrollUV_Tex0(self,context)
 
         if self.tex_coord_mapper_1 == 1 and self.preview_scrolling:
-            mapping_tex_1.inputs["Scale"].default_value = (x1,y1,1)
             ScrollUV_Tex1(self, context)
         else:
             UnScrollUV_Tex1(self,context)
@@ -915,7 +928,7 @@ Material.use_recolor = BoolProperty(
 Material.use_world = BoolProperty(
     name='Use world cords',
     description='Use world coordinates to scroll the textures, instead of time. No effect in Blender.',
-    default=True)
+    default=False)
 
 Material.house_color_pulse = BoolProperty(
     name='House color pulse',
@@ -1104,8 +1117,12 @@ def OnSwayEnabled(self, context):
                 modifier = binded_obj.modifiers.new(name="GeometryNodes", type='NODES')
                 modifier.node_group = bpy.data.node_groups.new(name="CustomGeometryNodes", type='GeometryNodeTree')
 
-                modifier.node_group.inputs.new(type='NodeSocketGeometry', name="Geometry")            
-                modifier.node_group.outputs.new(type='NodeSocketGeometry', name="Geometry")
+                if bpy.app.version >= (4, 0, 0):
+                    modifier.node_group.interface.new_socket(name="Geometry", in_out='INPUT', socket_type='NodeSocketGeometry')
+                    modifier.node_group.interface.new_socket(name="Geometry", in_out='OUTPUT', socket_type='NodeSocketGeometry')
+                else:
+                    modifier.node_group.inputs.new(type='NodeSocketGeometry', name="Geometry")            
+                    modifier.node_group.outputs.new(type='NodeSocketGeometry', name="Geometry")
 
                 input_node = create_node_no_repeative(modifier.node_group.nodes, 'NodeGroupInput', "input_node")
                 output_node = create_node_no_repeative(modifier.node_group.nodes, 'NodeGroupOutput', "output_node")
