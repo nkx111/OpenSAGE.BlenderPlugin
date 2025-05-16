@@ -24,6 +24,7 @@ GitHub地址：https://github.com/nkx111/OpenSAGE.BlenderPlugin
 2025/5/16 更新：
 修复了defaultw3d的uv缩放问题，不是所有选项都应用uv缩放
 适配 blender 4.x 版本
+新增了阵营色预览功能
 
 2025/5/9 更新：
 重写了材质的导入导出逻辑。现在能够支持所有RA3材质了，导出后的参数不会有异常。

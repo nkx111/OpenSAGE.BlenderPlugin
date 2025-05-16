@@ -191,7 +191,10 @@ def OnRenderingChanged(self:Material, context):
         else:
             if self.alpha_test == False:
                 self.blend_method = "BLEND"    
-                self.show_transparent_back = True
+                if self.material_type != "Infantry":
+                    self.show_transparent_back = True
+                else:
+                    self.show_transparent_back = False
             else:
                 self.blend_method = "CLIP"  
     elif self.material_type in ["MuzzleFlash","FXLightning", "Lightning", "FXProtonCollider"]:
@@ -202,7 +205,7 @@ def OnRenderingChanged(self:Material, context):
             self.blend_method = "OPAQUE"
         else:
             self.blend_method = "CLIP"  
-            self.show_transparent_back = True
+            self.show_transparent_back = False
 
 
 def OnTexture01Changed(self:Material, context):
@@ -219,6 +222,13 @@ def OnTexture01Changed(self:Material, context):
             mapping_tex_0.inputs["Scale"].default_value = (x0,y0,1)
         self.node_tree.links.new(uv_tex_0.outputs['UV'], mapping_tex_0.inputs['Vector'])
         self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
+
+        color_mix_node_diffuse = create_node_no_repeative(nodes, "ShaderNodeMixRGB", "color_mix_node_diffuse")
+        color_mix_node_diffuse.blend_type = 'MULTIPLY'
+        color_mix_node_diffuse.inputs[0].default_value = 1  # Mix factor
+        color_mix_node_diffuse.inputs[1].default_value = (*self.diffuse_color3, 1.0)  # Convert to 4D vector
+        self.node_tree.links.new(tex_node.outputs["Color"], color_mix_node_diffuse.inputs[2])
+
         if self.material_type != "Infantry":
             if self.material_type == "MuzzleFlash":
                 self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
@@ -232,14 +242,29 @@ def OnTexture01Changed(self:Material, context):
                     self.node_tree.links.new(math_node_alpha.outputs["Value"], principled.node_principled_bsdf.inputs["Alpha"])   
                 else:
                     self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Alpha"])
-               
 
-        color_mix_node_diffuse = create_node_no_repeative(nodes, "ShaderNodeMixRGB", "color_mix_node_diffuse")
-        color_mix_node_diffuse.blend_type = 'MULTIPLY'
-        color_mix_node_diffuse.inputs[0].default_value = 1  # Mix factor
-        color_mix_node_diffuse.inputs[1].default_value = (*self.diffuse_color3, 1.0)  # Convert to 4D vector
-        self.node_tree.links.new(tex_node.outputs["Color"], color_mix_node_diffuse.inputs[2])
-        self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
+
+            self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
+
+        else:
+            faction_color_node = create_node_no_repeative(nodes, 'ShaderNodeRGB', "faction_color_node")
+            faction_color_node.outputs["Color"].default_value = (*self.faction_color, 1.0)  # Convert to 4D vector
+
+            color_mix_node_faction_1 = create_node_no_repeative(nodes, "ShaderNodeMixRGB", "color_mix_node_faction_1")
+            color_mix_node_faction_1.blend_type = 'MULTIPLY'
+            color_mix_node_faction_1.inputs[0].default_value = 1  # Mix factor
+            self.node_tree.links.new(faction_color_node.outputs["Color"], color_mix_node_faction_1.inputs[1])
+            self.node_tree.links.new(tex_node.outputs["Color"], color_mix_node_faction_1.inputs[2])
+
+            color_mix_node_faction_2 = create_node_no_repeative(nodes, "ShaderNodeMixRGB", "color_mix_node_faction_2")
+            self.node_tree.links.new(tex_node.outputs["Alpha"], color_mix_node_faction_2.inputs[0])
+            self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], color_mix_node_faction_2.inputs[1])
+            self.node_tree.links.new(color_mix_node_faction_1.outputs["Color"], color_mix_node_faction_2.inputs[2])
+
+            self.node_tree.links.new(color_mix_node_faction_2.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
+   
+
+
         if self.material_type in ["FXLightning", "Lightning", "FXProtonCollider"]:
             if bpy.app.version >= (4, 0, 0):
                 self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Emission Color"])
@@ -468,35 +493,50 @@ Material.sampler_clamp_uv_no_mip_1 = FloatVectorProperty(
 def OnDiffuseTextureChanged(self, context):
     if self.diffuse_texture != "":
         principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
-        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture, "tex_diffuse")
-        self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
-        self.node_tree.links.new(tex_node.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
+        nodes = self.node_tree.nodes
+
+        tex_diffuse = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture, "tex_diffuse")
+        tex_spec = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.spec_texture, "tex_spec")
+        spec_sepa_node = create_node_no_repeative(nodes, "ShaderNodeSeparateColor", "spec_sepa_node")
+        self.node_tree.links.new(tex_spec.outputs["Color"], spec_sepa_node.inputs["Color"])
+
+        #self.node_tree.links.new(tex_node.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
+        self.node_tree.links.new(tex_diffuse.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
+
+        faction_color_node = create_node_no_repeative(nodes, 'ShaderNodeRGB', "faction_color_node")
+        faction_color_node.outputs["Color"].default_value = (*self.faction_color, 1.0)  # Convert to 4D vector
+
+        color_mix_node_faction_1 = create_node_no_repeative(nodes, "ShaderNodeMixRGB", "color_mix_node_faction_1")
+        color_mix_node_faction_1.blend_type = 'MULTIPLY'
+        color_mix_node_faction_1.inputs[0].default_value = 1  # Mix factor
+        self.node_tree.links.new(faction_color_node.outputs["Color"], color_mix_node_faction_1.inputs[1])
+        self.node_tree.links.new(tex_diffuse.outputs["Color"], color_mix_node_faction_1.inputs[2])
+
+        color_mix_node_faction_2 = create_node_no_repeative(nodes, "ShaderNodeMixRGB", "color_mix_node_faction_2")
+        self.node_tree.links.new(spec_sepa_node.outputs["Blue"], color_mix_node_faction_2.inputs[0])
+        self.node_tree.links.new(tex_diffuse.outputs["Color"], color_mix_node_faction_2.inputs[1])
+        self.node_tree.links.new(color_mix_node_faction_1.outputs["Color"], color_mix_node_faction_2.inputs[2])
+
+        self.node_tree.links.new(color_mix_node_faction_2.outputs["Color"], principled.node_principled_bsdf.inputs["Base Color"])
+
+        if bpy.app.version >= (4, 0, 0):
+            self.node_tree.links.new(spec_sepa_node.outputs["Red"], principled.node_principled_bsdf.inputs["Specular IOR Level"])
+            self.node_tree.links.new(spec_sepa_node.outputs["Green"], principled.node_principled_bsdf.inputs["Sheen Weight"])
+        else:
+            self.node_tree.links.new(spec_sepa_node.outputs["Red"], principled.node_principled_bsdf.inputs["Specular"])
+            self.node_tree.links.new(spec_sepa_node.outputs["Green"], principled.node_principled_bsdf.inputs["Sheen"])
+
 Material.diffuse_texture = StringProperty(
     name='Diffuse Texture',
     description='The main color texture. No Alpha channel',
     default='',
     update=OnDiffuseTextureChanged)
 
-def OnSpecTextureChanged(self, context):
-    if self.spec_texture != "":
-        principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
-        nodes = self.node_tree.nodes
-        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.spec_texture, "tex_spec")
-        spec_sepa_node = create_node_no_repeative(nodes, "ShaderNodeSeparateColor", "spec_sepa_node")
-        self.node_tree.links.new(tex_node.outputs["Color"], spec_sepa_node.inputs["Color"])
-        if bpy.app.version >= (4, 0, 0):
-            self.node_tree.links.new(spec_sepa_node.outputs["Red"], principled.node_principled_bsdf.inputs["Specular IOR Level"])
-            self.node_tree.links.new(spec_sepa_node.outputs["Green"], principled.node_principled_bsdf.inputs["Sheen Weight"])
-            self.node_tree.links.new(spec_sepa_node.outputs["Blue"], principled.node_principled_bsdf.inputs["Coat Weight"])          
-        else:
-            self.node_tree.links.new(spec_sepa_node.outputs["Red"], principled.node_principled_bsdf.inputs["Specular"])
-            self.node_tree.links.new(spec_sepa_node.outputs["Green"], principled.node_principled_bsdf.inputs["Sheen"])
-            self.node_tree.links.new(spec_sepa_node.outputs["Blue"], principled.node_principled_bsdf.inputs["Clearcoat"])
 Material.spec_texture = StringProperty(
     name='Specular Texture',
     description='R channel: defines Specular Intensity; G channel: defines glassness; B channel: defines faction color position',
     default='',
-    update=OnSpecTextureChanged)
+    update=OnDiffuseTextureChanged)
 
 def OnNrmTextureChanged(self:Material, context):
     if self.normal_texture != "":
@@ -575,6 +615,21 @@ Material.preview_holes = BoolProperty(
     default=False,
     update=OnDamagedViewChanged
 )
+
+def OnFactionColorChanged(self:Material, context):
+    nodes = self.node_tree.nodes   
+    faction_color_node = create_node_no_repeative(nodes, 'ShaderNodeRGB', "faction_color_node")
+    faction_color_node.outputs["Color"].default_value = (*self.faction_color, 1.0)  # Convert to 4D vector
+Material.faction_color = FloatVectorProperty(
+    name='Preview Faction Color',
+    subtype='COLOR',
+    size=3,
+    default=(1.0, 1.0, 1.0),
+    min=0.0, max=1.0,
+    description='Faction color',
+    update=OnFactionColorChanged
+)
+
 
 def OnPreviewHolesForAll(self:Material, context):
     for material in bpy.data.materials:

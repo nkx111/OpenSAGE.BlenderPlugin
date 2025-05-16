@@ -6,7 +6,18 @@ from bpy.types import Material, PropertyGroup
 # input name : custom property name
 
 material_parameter_map = {
-("BuildingsSoviet", "BuildingsAllied", "BuildingsJapan", "BuildingsGeneric", "NormalMapped"): {
+("BuildingsSoviet", "BuildingsAllied", "BuildingsJapan"): {
+    "__Preview": "preview_holes_trigger",
+    "__FactionColor": "faction_color",
+
+    "DiffuseTexture":"diffuse_texture",
+    "NormalMap":"normal_texture",
+    "SpecMap":"spec_texture",
+    "DamagedTexture":"damaged_texture",
+    "EnvMult":"environment_mult",
+},
+
+("BuildingsGeneric",): {
     "__Preview": "preview_holes_trigger",
 
     "DiffuseTexture":"diffuse_texture",
@@ -15,6 +26,20 @@ material_parameter_map = {
     "DamagedTexture":"damaged_texture",
     "EnvMult":"environment_mult",
 },
+
+("NormalMapped",): {
+    "DiffuseTexture":"diffuse_texture",
+    "NormalMap":"normal_texture",
+    "DamagedTexture":"damaged_texture",
+    "BumpScale":"bump_uv_scale",
+    "AmbientColor":"ambient_color3",
+    "DiffuseColor":"diffuse_color4",
+    "SpecularColor":"specular_color_alt",
+    "SpecularExponent":"specular_intensity_alt",
+    "EnvMult":"environment_mult",
+    "AlphaTestEnable":"alpha_test",    
+},
+
 
 ("BuildingsGenericDamageFill",) : {
     "__Preview": "preview_holes_trigger",
@@ -31,7 +56,17 @@ material_parameter_map = {
     "EnvMult":"environment_mult"
 },
 
-("ObjectsSoviet", "ObjectsAllied", "ObjectsJapan", "ObjectsTerrain"):{
+("ObjectsSoviet", "ObjectsAllied", "ObjectsJapan"):{
+    "__FactionColor": "faction_color",
+
+    "DiffuseTexture":"diffuse_texture",
+    "NormalMap":"normal_texture",
+    "SpecMap":"spec_texture",
+    "EnvMult":"environment_mult",
+    "AlphaTestEnable":"alpha_test",
+},
+
+("ObjectsTerrain",):{
     "DiffuseTexture":"diffuse_texture",
     "NormalMap":"normal_texture",
     "SpecMap":"spec_texture",
@@ -63,7 +98,23 @@ material_parameter_map = {
     "AlphaTestEnable":"alpha_test",
 },
 
-("Infantry", "Tree", "BasicW3D"):{
+("Infantry",):{
+    "__FactionColor": "faction_color",
+
+    "ColorAmbient":"ambient_color3",
+    "ColorDiffuse":"diffuse_color3",
+    "ColorSpecular":"specular_color_alt",
+    "Shininess":"specular_intensity_alt",
+    "ColorEmissive":"emission_color",
+    "Texture_0":"texture_0",
+    "DepthWriteEnable":"depth_write",
+    "AlphaTestEnable":"alpha_test",
+    "CullingEnable":"use_backface_culling",
+    "BlendMode":"blend_mode",    
+},
+
+
+("Tree", "BasicW3D"):{
     "ColorAmbient":"ambient_color3",
     "ColorDiffuse":"diffuse_color3",
     "ColorSpecular":"specular_color_alt",
