@@ -178,7 +178,7 @@ def create_texture_node(material, path_list, file, name = None):
     path_list_pref = []
     for path in path_list:
         path_list_pref.append(path.name)
-    path_list_full = [material.texture_path] + path_list_pref
+    path_list_full = [os.path.dirname(bpy.data.filepath), material.texture_path] + path_list_pref
     img = find_texture_from_path(path_list_full, file)
     img.alpha_mode = "NONE"
     for node in material.node_tree.nodes:

@@ -21,6 +21,10 @@ GitHub地址：https://github.com/nkx111/OpenSAGE.BlenderPlugin
 1. 同时导入和管理多个动画
 2. 动画透明度channel问题、多channel动画导出疑似存在异常
 
+2025/5/29 更新：
+贴图搜索路径
+版本号更新为0.8
+
 2025/5/16 更新：
 修复了defaultw3d的uv缩放问题，不是所有选项都应用uv缩放
 适配 blender 4.x 版本

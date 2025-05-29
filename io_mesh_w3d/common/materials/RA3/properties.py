@@ -190,11 +190,15 @@ def OnRenderingChanged(self:Material, context):
             self.blend_method = "OPAQUE"
         else:
             if self.alpha_test == False:
-                self.blend_method = "BLEND"    
                 if self.material_type != "Infantry":
                     self.show_transparent_back = True
+                    if self.blend_mode == 2:  # 0: opaque, 1: opaque with alpha, 2: additive
+                        self.blend_method = "BLEND"    
+                    else:
+                        self.blend_method = "OPAQUE"    
                 else:
                     self.show_transparent_back = False
+                    self.blend_method = "BLEND"    
             else:
                 self.blend_method = "CLIP"  
     elif self.material_type in ["MuzzleFlash","FXLightning", "Lightning", "FXProtonCollider"]:
