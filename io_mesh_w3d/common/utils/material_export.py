@@ -7,6 +7,7 @@ from io_mesh_w3d.w3d.structs.mesh_structs.shader import *
 from io_mesh_w3d.w3d.structs.mesh_structs.vertex_material import *
 from io_mesh_w3d.common.structs.mesh_structs.shader_material import *
 from io_mesh_w3d.custom_properties import *
+import os
 
 DEFAULT_W3D = 'DefaultW3D.fx'
 
@@ -49,7 +50,9 @@ def get_used_textures_global_tree():
             for node in material.node_tree.nodes:
                 if node.type == 'TEX_IMAGE': 
                     if node.image and node.image.name != "IMG_NOT_FOUND":
-                        used_images.append((node.image.name, node.image.filepath))
+                        abs_path = bpy.path.abspath(node.image.filepath)
+                        if os.path.exists(abs_path):
+                            used_images.append((node.image.name, abs_path))
     return used_images
 
 def retrieve_vertex_material(material, principled):

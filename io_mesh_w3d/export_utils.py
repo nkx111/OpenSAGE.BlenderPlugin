@@ -51,7 +51,7 @@ def retrieve_data(context, export_settings):
         rig=rig,
         meshes=[],
         textures=[],
-        collision_boxes=retrieve_boxes(container_name),
+        collision_boxes=retrieve_boxes(context, container_name),
         dazzles=retrieve_dazzles(container_name),
         hierarchy=hierarchy,
         hlod=hlod)

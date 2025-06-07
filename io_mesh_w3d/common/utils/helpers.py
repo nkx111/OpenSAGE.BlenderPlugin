@@ -201,7 +201,7 @@ def create_node_no_repeative(nodes, type, name):
     return new_node
 
 
-def get_aa_box(vertices):
+def get_aa_box(vertices, matrix_local = Matrix.Identity(4)):
     minX = sys.float_info.max
     maxX = sys.float_info.min
 
@@ -212,13 +212,23 @@ def get_aa_box(vertices):
     maxZ = sys.float_info.min
 
     for vertex in vertices:
-        minX = min(vertex.co.x, minX)
-        maxX = max(vertex.co.x, maxX)
 
-        minY = min(vertex.co.y, minY)
-        maxY = max(vertex.co.y, maxY)
+        coord = Vector(vertex.co)
 
-        minZ = min(vertex.co.z, minZ)
-        maxZ = max(vertex.co.z, maxZ)
+        minX = min((matrix_local @ coord).x, minX)
+        maxX = max((matrix_local @ coord).x, maxX)
+        minY = min((matrix_local @ coord).y, minY)
+        maxY = max((matrix_local @ coord).y, maxY)
+        minZ = min((matrix_local @ coord).z, minZ)
+        maxZ = max((matrix_local @ coord).z, maxZ)
 
     return Vector((maxX - minX, maxY - minY, maxZ - minZ))
+
+def get_aa_center(vertices, matrix_local = Matrix.Identity(4)):
+    vertex_sum = Vector((0, 0, 0))
+    vertex_count = len(vertices)
+    for vertex in vertices:
+        vertex_sum += matrix_local @ vertex.co
+
+    centroid_local = vertex_sum / vertex_count if vertex_count > 0 else Vector((0,0,0))
+    return centroid_local
