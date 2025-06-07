@@ -36,7 +36,7 @@ def save(context, export_settings, data_context):
         # obbox
         for box in data_context.collision_boxes:
             if export_settings['individual_files']:
-                path = directory + "." + box.identifier() + context.filename_ext
+                path = directory + box.identifier() + context.filename_ext
                 context.info('Saving file :' + path)
                 write_struct(box, path)
             else:
