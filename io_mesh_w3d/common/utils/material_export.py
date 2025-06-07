@@ -42,6 +42,15 @@ def get_used_textures(material, principled, used_textures):
 
     return used_textures
 
+def get_used_textures_global_tree():
+    used_images = []
+    for material in bpy.data.materials:
+        if material.node_tree: 
+            for node in material.node_tree.nodes:
+                if node.type == 'TEX_IMAGE': 
+                    if node.image and node.image.name != "IMG_NOT_FOUND":
+                        used_images.append((node.image.name, node.image.filepath))
+    return used_images
 
 def retrieve_vertex_material(material, principled):
     info = VertexMaterialInfo(

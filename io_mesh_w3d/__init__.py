@@ -62,10 +62,10 @@ class ExportW3D(bpy.types.Operator, ExportHelper, ReportHelper):
         name='Mode',
         items=(
             ('HM',
-             'Hierarchical Model',
+             'Hierarchy + Mesh + Contatiner',
              'This will export all the meshes of the scene with hierarchy/skeleton data'),
             ('HAM',
-             'Hierarchical Animated Model',
+             'Hierarchy + Mesh + Contatiner + Animation',
              'This will export all the meshes of the scene with hierarchy/skeleton and animation data'),
             ('A',
              'Animation',
@@ -74,7 +74,7 @@ class ExportW3D(bpy.types.Operator, ExportHelper, ReportHelper):
              'Hierarchy',
              'This will export the hierarchy/skeleton without any geometry or animation data'),
             ('M',
-             'Mesh',
+             'Mesh + Contatiner',
              'This will export a simple mesh (only the first of the scene if there are multiple), \
                 without any hierarchy/skeleton and animation data')),
         description='Select the export mode',
@@ -97,7 +97,7 @@ class ExportW3D(bpy.types.Operator, ExportHelper, ReportHelper):
         name='Force Vertex Materials', description='Export all materials as Vertex Materials only', default=False)
 
     individual_files: BoolProperty(
-        name='Individual files',
+        name='Individual files (3DS Max Style)',
         description='Creates an individual file for each mesh, boundingbox and the hierarchy',
         default=False)
 
@@ -145,12 +145,12 @@ class ExportW3D(bpy.types.Operator, ExportHelper, ReportHelper):
 
     def draw(self, _context):
         self.draw_general_settings()
-        if self.export_mode == 'HM':
-            self.draw_use_existing_skeleton()
-            if self.file_format == 'W3X':
-                self.draw_individual_files()
+        # if self.export_mode == 'HM':
+        #     self.draw_use_existing_skeleton()
+        if self.file_format == 'W3X':
+            self.draw_individual_files()
 
-        if self.file_format == 'W3X' and 'M' in self.export_mode:
+        #if self.file_format == 'W3X' and 'M' in self.export_mode:
             self.draw_create_texture_xmls()
 
         if self.file_format == 'W3D' and 'M' in self.export_mode:

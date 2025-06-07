@@ -193,9 +193,11 @@ class W3DMesh:
     def container_name(self):
         return self.header.container_name
 
+    # pure name. e.g. NEWSKIN
     def name(self):
         return self.header.mesh_name
 
+    # unique name. e.g. SUANTIAIRSHIP_SKN.NEWSKIN
     def identifier(self):
         return self.header.container_name + '.' + self.name()
 

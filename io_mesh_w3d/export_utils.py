@@ -40,11 +40,11 @@ def retrieve_data(context, export_settings):
         context.error(f'Filename is longer than {STRING_LENGTH} characters, aborting export!')
         return None
 
+    bpy.ops.object.mode_set(mode='OBJECT')
     hierarchy, rig, hlod = None, None, None
 
-    if export_mode != 'M':
-        hierarchy, rig = retrieve_hierarchy(context, container_name)
-        hlod = create_hlod(hierarchy, container_name)
+    hierarchy, rig = retrieve_hierarchy(context, container_name)
+    hlod = create_hlod(hierarchy, container_name)
 
     data_context = DataContext(
         container_name=container_name,
@@ -56,10 +56,13 @@ def retrieve_data(context, export_settings):
         hierarchy=hierarchy,
         hlod=hlod)
 
+    if export_settings['create_texture_xmls']:
+        data_context.textures = get_used_textures_global_tree()
+
     if 'M' in export_mode:
-        (meshes, textures) = retrieve_meshes(context, hierarchy, rig, container_name)
+        meshes = retrieve_meshes(context, hierarchy, rig, container_name)
         data_context.meshes = meshes
-        data_context.textures = textures
+
         if not data_context.meshes:
             context.error('Scene does not contain any meshes, aborting export!')
             return None

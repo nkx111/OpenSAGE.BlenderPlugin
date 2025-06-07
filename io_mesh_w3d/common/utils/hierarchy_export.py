@@ -37,6 +37,12 @@ def retrieve_hierarchy(context, container_name):
         hierarchy.header.name = rig.data.name
         hierarchy.header.center_pos = rig.location
 
+        if rig.location != (0, 0, 0) or rig.scale != (1,1,1) or rig.rotation_euler != (0,0,0):
+            context.warning(f'Reset translation on the armature. To move/zoom/rotate the armature, do it in edit mode!')
+            rig.location = (0, 0, 0)
+            rig.scale = (1,1,1)
+            rig.rotation_euler = (0,0,0)
+
         for bone in rig.pose.bones:
             process_bone(bone, pivot_id_dict, hierarchy)
 
