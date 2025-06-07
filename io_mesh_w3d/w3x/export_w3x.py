@@ -52,7 +52,7 @@ def save(context, export_settings, data_context):
         # w3dcontainer
         if data_context.hlod:
             if export_settings['individual_files']:
-                    path = filepath_pure + "_SKN" + context.filename_ext
+                    path = filepath_pure + "_CTR" + context.filename_ext
                     context.info('Saving file :' + path)
                     write_struct(data_context.hlod, path)
             else:
