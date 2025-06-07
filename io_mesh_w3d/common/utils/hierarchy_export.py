@@ -24,7 +24,8 @@ def retrieve_hierarchy(context, container_name):
     if len(rigs) == 0:
         hierarchy.header.name = container_name
         hierarchy.header.center_pos = Vector()
-        context.warning('scene does not contain an armature object!')
+        context.warning('Scene does not contain an armature object! Can only export meshes')
+        return None, None
 
     if len(rigs) > 0:
         rig = rigs[0]

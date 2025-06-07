@@ -40,11 +40,15 @@ def retrieve_data(context, export_settings):
         context.error(f'Filename is longer than {STRING_LENGTH} characters, aborting export!')
         return None
 
-    bpy.ops.object.mode_set(mode='OBJECT')
+    try:
+        bpy.ops.object.mode_set(mode='OBJECT')
+    except:
+        pass
     hierarchy, rig, hlod = None, None, None
 
     hierarchy, rig = retrieve_hierarchy(context, container_name)
-    hlod = create_hlod(hierarchy, container_name)
+    if hierarchy:
+        hlod = create_hlod(hierarchy, container_name)
 
     data_context = DataContext(
         container_name=container_name,
@@ -72,12 +76,14 @@ def retrieve_data(context, export_settings):
                 context.error('aborting export!')
                 return None
 
-    if 'H' in export_mode and not hierarchy.validate(context):
-        context.error('aborting export!')
-        return None
+    if 'H' in export_mode :
+        if hierarchy is not None:
+            if not hierarchy.validate(context):
+                context.error('aborting export!')
+                return None
 
     if export_mode in ['HM', 'HAM']:
-        if not data_context.hlod.validate(context):
+        if data_context.hlod and not data_context.hlod.validate(context):
             context.error('aborting export!')
             return None
 
@@ -89,7 +95,7 @@ def retrieve_data(context, export_settings):
     if 'A' in export_mode:
         timecoded = export_settings['compression'] == 'TC'
         data_context.animation = retrieve_animation(context, container_name, hierarchy, rig, timecoded)
-        if not data_context.animation.validate(context):
+        if data_context.animation and not data_context.animation.validate(context):
             context.error('aborting export!')
             return None
     return data_context

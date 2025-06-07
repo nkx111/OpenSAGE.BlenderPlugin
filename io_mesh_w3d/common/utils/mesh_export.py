@@ -87,7 +87,7 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
             matrix = Matrix.Identity(4)
             matrix_2 = Matrix.Identity(4)
 
-            if vertex.groups:
+            if vertex.groups and hierarchy:
                 vert_inf = VertexInfluence()
                 vert_inf.bone_idx = find_bone_index(hierarchy, mesh_object, vertex.groups[0].group)
                 vert_inf.bone_inf = vertex.groups[0].weight
@@ -130,7 +130,7 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
                 else:
                     matrix_2 = matrix
 
-            elif is_skinned:
+            elif is_skinned and hierarchy:
                 unskinned_vertices_error = True
                 context.error(f'skinned mesh \'{mesh_object.name}\' vertex {i} is not rigged to any bone!')
 

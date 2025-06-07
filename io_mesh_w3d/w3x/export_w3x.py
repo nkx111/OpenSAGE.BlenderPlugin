@@ -24,7 +24,7 @@ def save(context, export_settings, data_context):
 
     # directory = os.path.dirname(context.filepath) + os.path.sep
 
-    if 'H' in export_mode:
+    if 'H' in export_mode and data_context.hierarchy:
         if export_settings['individual_files']:
             path = filepath_pure + "_SKL" + context.filename_ext
             context.info('Saving file :' + path)
@@ -50,14 +50,15 @@ def save(context, export_settings, data_context):
             else:
                 mesh.create(root)
         # w3dcontainer
-        if export_settings['individual_files']:
-                path = filepath_pure + "_SKN" + context.filename_ext
-                context.info('Saving file :' + path)
-                write_struct(data_context.hlod, path)
-        else:
-            data_context.hlod.create(root)
+        if data_context.hlod:
+            if export_settings['individual_files']:
+                    path = filepath_pure + "_SKN" + context.filename_ext
+                    context.info('Saving file :' + path)
+                    write_struct(data_context.hlod, path)
+            else:
+                data_context.hlod.create(root)
 
-    if "A" in export_mode:
+    if "A" in export_mode and data_context.animation:
         if export_settings['individual_files']:
             path = directory + data_context.animation.name() + context.filename_ext
             context.info('Saving file :' + path)
@@ -78,5 +79,7 @@ def save(context, export_settings, data_context):
         context.info('Saving file :' + filepath)
         write(root, filepath)
 
+    if not data_context.hierarchy:
+        context.warning('Export incomplete')
 
     return {'FINISHED'}
