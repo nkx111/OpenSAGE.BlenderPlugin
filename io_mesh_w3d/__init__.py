@@ -338,22 +338,18 @@ class Operator_AddTexturePath(Operator):
     bl_idname = "addonname.add_texture_path"
     bl_label = "Add Texture Path"
     
-    # 用于存储用户选择的文件路径
     directory: StringProperty(
         subtype='DIR_PATH',
         default="",
     )
     
     def invoke(self, context, event):
-        # 打开文件夹选择器
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
     
     def execute(self, context):
         if self.directory:
-            # 获取插件偏好设置
             prefs = context.preferences.addons[__name__].preferences
-            # 添加新路径项
             new_path = prefs.texture_paths.add()
             new_path.name = self.directory
         return {'FINISHED'}
@@ -362,7 +358,7 @@ class Operator_RemoveTexturePath(Operator):
     bl_idname = "addonname.remove_texture_path"
     bl_label = "Remove Texture Path"
     
-    index: IntProperty(default=0)  # 要删除的路径索引
+    index: IntProperty(default=0)
     
     def execute(self, context):
         prefs = context.preferences.addons[__name__].preferences
