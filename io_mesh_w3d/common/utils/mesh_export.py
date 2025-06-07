@@ -13,7 +13,6 @@ from io_mesh_w3d.common.utils.material_export import *
 
 def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materials=False):
     mesh_structs = []
-    used_textures = []
 
     naming_error = False
     bone_names = [bone.name for bone in rig.pose.bones] if rig is not None else []
@@ -24,10 +23,7 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
 
     for mesh_object in get_objects('MESH'):
         if mesh_object.data.object_type != 'MESH':
-            continue
-
-        if mesh_object.mode != 'OBJECT':
-            bpy.ops.object.mode_set(mode='OBJECT')
+            continue    
 
         mesh_struct = W3DMesh()
         mesh_struct.header = MeshHeader(
@@ -50,6 +46,14 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
         mesh_object = mesh_object.evaluated_get(depsgraph)
         mesh = mesh_object.data
         b_mesh = prepare_bmesh(context, mesh)
+        normal_bk = [Vector] * len(b_mesh.verts)
+        for i,v in enumerate(b_mesh.verts):
+            # must backup this "old" normal before b_mesh.to_mesh() ruins it
+            # use old normal for export
+            normal_bk[i] = v.normal 
+        b_mesh.to_mesh(mesh)
+        mesh.update()
+
 
         if len(mesh.vertices) == 0:
             context.warning(f'mesh \'{mesh.name}\' does not have a single vertex!')
@@ -130,34 +134,34 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
                 unskinned_vertices_error = True
                 context.error(f'skinned mesh \'{mesh_object.name}\' vertex {i} is not rigged to any bone!')
 
-            vertex.co.x *= scale.x
-            vertex.co.y *= scale.y
-            vertex.co.z *= scale.z
-            mesh_struct.verts.append(matrix @ vertex.co)
-            mesh_struct.verts_2.append(matrix_2 @ vertex.co)
-
+            translation_self = mesh_object.matrix_local
+            _, rotation_self, _ = translation_self.decompose()
             _, rotation, _ = matrix.decompose()
             _, rotation_2, _ = matrix_2.decompose()
+
+            # compute coordinates
+            mesh_struct.verts.append(matrix @ translation_self @ vertex.co)
+            mesh_struct.verts_2.append(matrix_2 @ translation_self @ vertex.co)
 
             if i in loop_dict:
                 loop = loop_dict[i]
                 # do NOT use loop.normal here! that might result in weird shading issues
-                mesh_struct.normals.append(rotation @ vertex.normal)
-                mesh_struct.normals_2.append(rotation_2 @ vertex.normal)
+                mesh_struct.normals.append(rotation @ rotation_self @ normal_bk[i])
+                mesh_struct.normals_2.append(rotation_2 @ rotation_self @ normal_bk[i])
 
                 if mesh.uv_layers:
                     # in order to adapt to 3ds max orientation
-                    mesh_struct.tangents.append((rotation @ loop.bitangent) * -1)
-                    mesh_struct.bitangents.append((rotation @ loop.tangent))
+                    mesh_struct.tangents.append((rotation @ rotation_self @ loop.bitangent) * -1)
+                    mesh_struct.bitangents.append((rotation @ rotation_self @ loop.tangent))
             else:
                 context.warning(f'mesh \'{mesh_object.name}\' vertex {i} is not connected to any face!')
-                mesh_struct.normals.append(rotation @ vertex.normal)
-                mesh_struct.normals_2.append(rotation_2 @ vertex.normal)
+                mesh_struct.normals.append(rotation @ rotation_self @ vertex.normal)
+                mesh_struct.normals_2.append(rotation_2 @ rotation_self @ vertex.normal)
 
                 if mesh.uv_layers:
                     # only dummys
-                    mesh_struct.tangents.append((rotation @ vertex.normal) * -1)
-                    mesh_struct.bitangents.append((rotation @ vertex.normal))
+                    mesh_struct.tangents.append((rotation @ rotation_self @ vertex.normal) * -1)
+                    mesh_struct.bitangents.append((rotation @ rotation_self @ vertex.normal))
 
         if unskinned_vertices_error or overskinned_vertices_error:
             return ([], [])
@@ -232,8 +236,6 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
                 continue
 
             principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=True)
-
-            used_textures = get_used_textures(material, principled, used_textures)
 
             if context.file_format == 'W3X' or (
                     material.material_type == 'SHADER_MATERIAL' and not force_vertex_materials):
@@ -347,7 +349,7 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
     if naming_error:
         return [], []
 
-    return mesh_structs, used_textures
+    return mesh_structs
 
 
 ##########################################################################
@@ -355,7 +357,7 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
 ##########################################################################
 
 
-def prepare_bmesh(context, mesh):
+def prepare_bmesh(context, mesh: Mesh):
     b_mesh = bmesh.new()
     b_mesh.from_mesh(mesh)
     bmesh.ops.triangulate(b_mesh, faces=b_mesh.faces)
@@ -364,9 +366,8 @@ def prepare_bmesh(context, mesh):
 
     b_mesh = bmesh.new()
     b_mesh.from_mesh(mesh)
-    b_mesh = split_multi_uv_vertices(context, mesh, b_mesh)
-    b_mesh.to_mesh(mesh)
-    mesh.update()
+    b_mesh = split_multi_uv_vertices(context, b_mesh)
+    
     return b_mesh
 
 
@@ -378,32 +379,78 @@ def find_bone_index(hierarchy, mesh_object, group):
     raise Exception(f'no matching armature bone found for vertex group \'{mesh_object.vertex_groups[group].name}\'')
 
 
-def split_multi_uv_vertices(context, mesh, b_mesh):
-    b_mesh.verts.ensure_lookup_table()
+def split_multi_uv_vertices(context, b_mesh: bmesh.types.BMesh):
+    uv_layers = [layer for layer in b_mesh.loops.layers.uv.values()]
+    deform_layer = b_mesh.verts.layers.deform.active
 
-    for ver in b_mesh.verts:
-        ver.select_set(False)
+    if not uv_layers:
+        return b_mesh
 
-    for i, uv_layer in enumerate(mesh.uv_layers):
-        tx_coords = [None] * len(uv_layer.data)
-        for j, face in enumerate(b_mesh.faces):
-            for loop in face.loops:
-                vert_index = mesh.polygons[j].vertices[loop.index % 3]
-                if tx_coords[vert_index] is None:
-                    tx_coords[vert_index] = uv_layer.data[loop.index].uv
-                elif tx_coords[vert_index] != uv_layer.data[loop.index].uv:
-                    b_mesh.verts[vert_index].select_set(True)
-                    vert_index2 = mesh.polygons[j].vertices[(loop.index + 1) % 3]
-                    b_mesh.verts[vert_index2].select_set(True)
-                    vert_index3 = mesh.polygons[j].vertices[(loop.index - 1) % 3]
-                    b_mesh.verts[vert_index3].select_set(True)
+    split_vert_count = 0 
 
-    split_edges = [e for e in b_mesh.edges if e.verts[0].select and e.verts[1].select]
+    for v in list(b_mesh.verts):
+        linked_faces = [f for f in v.link_faces]
+        if len(linked_faces) <= 1:
+            continue
 
-    if len(split_edges) > 0:
-        bmesh.ops.split_edges(b_mesh, edges=split_edges)
-        context.info(f'mesh \'{mesh.name}\' vertices have been split because of multiple uv coordinates per vertex!')
+        original_normal = v.normal.copy()
 
+        uv_signatures = {}
+        for face in linked_faces:
+            loop = next((l for l in face.loops if l.vert == v), None)
+            if not loop:
+                continue
+
+            signature = tuple((loop[layer].uv.x, loop[layer].uv.y) for layer in uv_layers)
+            uv_signatures.setdefault(signature, []).append(face)
+
+        if len(uv_signatures) <= 1:
+            continue
+
+        first = True
+        for signature, faces in uv_signatures.items():
+            if first:
+                first = False
+                continue
+
+            new_vert = b_mesh.verts.new(v.co)
+            new_vert.normal = original_normal
+            new_vert.select_set(True)
+            split_vert_count += 1
+
+            if deform_layer:
+                v_deform = v[deform_layer]
+                new_vert_deform = new_vert[deform_layer]
+                for group, weight in v_deform.items():
+                    new_vert_deform[group] = weight
+
+            for face in faces:
+                old_verts = [loop.vert for loop in face.loops]
+                new_verts = [
+                    new_vert if loop.vert == v else loop.vert
+                    for loop in face.loops
+                ]
+
+                uv_data = {}
+                for layer in uv_layers:
+                    uv_data[layer] = [loop[layer].uv.copy() for loop in face.loops]
+                face_normal = face.normal
+
+                b_mesh.faces.remove(face)
+
+                new_face = b_mesh.faces.new(new_verts)
+                new_face.normal = face_normal
+                
+                for loop, old_uvs in zip(new_face.loops, zip(*[uv_data[layer] for layer in uv_layers])):
+                    for layer, uv in zip(uv_layers, old_uvs):
+                        loop[layer].uv = uv
+
+                for loop in new_face.loops:
+                    if loop.vert == new_vert:
+                        loop.vert.normal = original_normal
+
+    if split_vert_count > 0:
+        context.info(f"Split {split_vert_count} vertices with multiple uv coordinates on it")
     return b_mesh
 
 
