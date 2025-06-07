@@ -141,6 +141,7 @@ def find_texture(context, file, name=None):
     img.alpha_mode = 'STRAIGHT'
     return img
 
+
 def find_texture_from_path(path_list, file):
     pure_name = file.rsplit('.', 1)[0]
 
@@ -172,7 +173,8 @@ def find_texture_from_path(path_list, file):
     img.alpha_mode = 'STRAIGHT'
     return img
 
-def create_texture_node(material, path_list, file, name = None):
+
+def create_texture_node(material, path_list, file, name=None):
     if name is None:
         name = file
     path_list_pref = []
@@ -191,6 +193,7 @@ def create_texture_node(material, path_list, file, name = None):
     node.name = name
     return node
 
+
 def create_node_no_repeative(nodes, type, name):
     for node in nodes:
         if node.name == name:
@@ -201,7 +204,7 @@ def create_node_no_repeative(nodes, type, name):
     return new_node
 
 
-def get_aa_box(vertices, matrix_local = Matrix.Identity(4)):
+def get_aa_box(vertices, matrix_local=Matrix.Identity(4)):
     minX = sys.float_info.max
     maxX = sys.float_info.min
 
@@ -224,11 +227,12 @@ def get_aa_box(vertices, matrix_local = Matrix.Identity(4)):
 
     return Vector((maxX - minX, maxY - minY, maxZ - minZ))
 
-def get_aa_center(vertices, matrix_local = Matrix.Identity(4)):
+
+def get_aa_center(vertices, matrix_local=Matrix.Identity(4)):
     vertex_sum = Vector((0, 0, 0))
     vertex_count = len(vertices)
     for vertex in vertices:
         vertex_sum += matrix_local @ vertex.co
 
-    centroid_local = vertex_sum / vertex_count if vertex_count > 0 else Vector((0,0,0))
+    centroid_local = vertex_sum / vertex_count if vertex_count > 0 else Vector((0, 0, 0))
     return centroid_local
