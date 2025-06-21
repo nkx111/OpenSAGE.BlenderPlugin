@@ -134,7 +134,7 @@ def create_material_from_shader_material(context, name, shader_mat):
         material = bpy.data.materials[name]
         principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=False)
         return material, principled
-    
+
     material = bpy.data.materials.new(name)
     material_type = str(shader_mat.header.type_name).split('.')[0]
     name, para_map = get_material_parameter_map(material_type, context)

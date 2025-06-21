@@ -13,9 +13,9 @@ def retrieve_boxes(context, container_name):
             continue
         name = container_name + '.' + mesh_object.name
 
-        if Vector(mesh_object.rotation_euler) != Vector((0,0,0)):
+        if Vector(mesh_object.rotation_euler) != Vector((0, 0, 0)):
             context.warning(f'Rotation on the collision box is not supported. Resetting to 0!')
-            mesh_object.rotation_euler = (0,0,0)
+            mesh_object.rotation_euler = (0, 0, 0)
 
         center = get_aa_center(mesh_object.data.vertices, mesh_object.matrix_local)
         extend = get_aa_box(mesh_object.data.vertices, mesh_object.matrix_local)

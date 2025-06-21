@@ -42,7 +42,7 @@ def retrieve_data(context, export_settings):
 
     try:
         bpy.ops.object.mode_set(mode='OBJECT')
-    except:
+    except BaseException:
         pass
     hierarchy, rig, hlod = None, None, None
 
@@ -76,7 +76,7 @@ def retrieve_data(context, export_settings):
                 context.error('aborting export!')
                 return None
 
-    if 'H' in export_mode :
+    if 'H' in export_mode:
         if hierarchy is not None:
             if not hierarchy.validate(context):
                 context.error('aborting export!')
