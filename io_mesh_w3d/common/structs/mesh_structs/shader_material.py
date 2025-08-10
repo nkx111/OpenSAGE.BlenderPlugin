@@ -59,11 +59,11 @@ class ShaderMaterialProperty:
 
     def to_rgba(self):
         if len(self.value) > 3:
-            return self.value.x, self.value.y, self.value.z, self.value.w 
+            return self.value.x, self.value.y, self.value.z, self.value.w
         elif len(self.value) == 3:
-            return self.value.x, self.value.y, self.value.z, 1 
+            return self.value.x, self.value.y, self.value.z, 1
         else:
-            return 1,1,1,1
+            return 1, 1, 1, 1
 
     @staticmethod
     def read(context, io_stream):
@@ -125,7 +125,7 @@ class ShaderMaterialProperty:
         elif self.type == VEC2_PROPERTY:
             write_vector2(self.value, io_stream)
         elif self.type == VEC3_PROPERTY:
-            write_vector4(Vector((self.value.x, self.value.y, self.value.z ,1)), io_stream)
+            write_vector4(Vector((self.value.x, self.value.y, self.value.z, 1)), io_stream)
         elif self.type == VEC4_PROPERTY:
             write_vector4(self.value, io_stream)
         elif self.type == LONG_PROPERTY:
@@ -208,6 +208,7 @@ class ShaderMaterialProperty:
             xml_value.text = str(self.value).lower()
 
         xml_constant.set('Name', self.name)
+
 
 W3D_CHUNK_SHADER_MATERIAL = 0x51
 

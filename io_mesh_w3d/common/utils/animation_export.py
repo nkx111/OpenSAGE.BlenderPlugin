@@ -120,7 +120,7 @@ def retrieve_channels(obj, hierarchy, timecoded, name=None):
 def retrieve_animation(context, animation_name, hierarchy, rig, timecoded):
     if hierarchy is None:
         return None
-    
+
     channels = []
 
     for mesh in get_objects('MESH'):

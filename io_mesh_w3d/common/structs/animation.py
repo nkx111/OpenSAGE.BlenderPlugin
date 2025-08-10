@@ -259,7 +259,7 @@ class Animation:
     # pure name. e.g. SUANTIAIRSHIP_IDLA
     def name(self):
         return self.header.name
-    
+
     @staticmethod
     def read(context, io_stream, chunk_end):
         result = Animation()

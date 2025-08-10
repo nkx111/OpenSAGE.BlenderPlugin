@@ -23,7 +23,7 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
 
     for mesh_object in get_objects('MESH'):
         if mesh_object.data.object_type != 'MESH':
-            continue    
+            continue
 
         mesh_struct = W3DMesh()
         mesh_struct.header = MeshHeader(
@@ -47,13 +47,12 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
         mesh = mesh_object.data
         b_mesh = prepare_bmesh(context, mesh)
         normal_bk = [Vector] * len(b_mesh.verts)
-        for i,v in enumerate(b_mesh.verts):
+        for i, v in enumerate(b_mesh.verts):
             # must backup this "old" normal before b_mesh.to_mesh() ruins it
             # use old normal for export
-            normal_bk[i] = v.normal 
+            normal_bk[i] = v.normal
         b_mesh.to_mesh(mesh)
         mesh.update()
-
 
         if len(mesh.vertices) == 0:
             context.warning(f'mesh \'{mesh.name}\' does not have a single vertex!')
@@ -367,7 +366,7 @@ def prepare_bmesh(context, mesh: Mesh):
     b_mesh = bmesh.new()
     b_mesh.from_mesh(mesh)
     b_mesh = split_multi_uv_vertices(context, b_mesh)
-    
+
     return b_mesh
 
 
@@ -386,7 +385,7 @@ def split_multi_uv_vertices(context, b_mesh: bmesh.types.BMesh):
     if not uv_layers:
         return b_mesh
 
-    split_vert_count = 0 
+    split_vert_count = 0
 
     for v in list(b_mesh.verts):
         linked_faces = [f for f in v.link_faces]
@@ -440,7 +439,7 @@ def split_multi_uv_vertices(context, b_mesh: bmesh.types.BMesh):
 
                 new_face = b_mesh.faces.new(new_verts)
                 new_face.normal = face_normal
-                
+
                 for loop, old_uvs in zip(new_face.loops, zip(*[uv_data[layer] for layer in uv_layers])):
                     for layer, uv in zip(uv_layers, old_uvs):
                         loop[layer].uv = uv

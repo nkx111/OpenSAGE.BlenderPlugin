@@ -154,7 +154,7 @@ Bone.visibility = FloatProperty(
 
 try:
     from io_mesh_w3d.selected_module import *
-except:
+except BaseException:
     print("Error! Material Property Group not loaded")
 
 ##########################################################################
