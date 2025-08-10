@@ -43,7 +43,7 @@ class CollisionBox:
 
     def name(self):
         return self.name_.split('.', 1)[-1]
-    
+
     # unique name. e.g. SUANTIAIRSHIP_SKN.OBBOX01
     def identifier(self):
         return self.name_
