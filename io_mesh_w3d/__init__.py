@@ -4,16 +4,24 @@
 import bpy
 from bpy.types import Panel,Operator
 from bpy_extras.io_utils import ImportHelper, ExportHelper
-from io_mesh_w3d.utils import ReportHelper
-from io_mesh_w3d.export_utils import save_data
-from io_mesh_w3d.custom_properties import *
-from io_mesh_w3d.geometry_export import *
-from io_mesh_w3d.bone_volume_export import *
+from .utils import ReportHelper
+from .export_utils import save_data
+from .custom_properties import *
+from .geometry_export import *
+from .bone_volume_export import *
 
-from io_mesh_w3d.blender_addon_updater import addon_updater_ops
+from .blender_addon_updater import addon_updater_ops
 
 VERSION = (0, 8, 3)
 
+# add-ons installed through the extension system (Blender 4.2+) live in the
+# 'bl_ext' package and are kept up to date by Blender itself
+IS_EXTENSION = (__package__ or '').startswith('bl_ext.')
+
+# the bundled updater is temporarily disabled in this fork, see readme_plugin_cn.txt
+ENABLE_UPDATER = False
+
+# 'bl_info' is only used for legacy installs, extensions are described by 'blender_manifest.toml'
 bl_info = {
     'name': 'Import/Export Westwood W3D Format (.w3d/.w3x)',
     'author': 'OpenSage Developers',
@@ -549,21 +557,32 @@ CLASSES = (
     #OBJECT_PT_DemoUpdaterPanel
 )
 
+# the bundled updater would overwrite the add-on behind Blender's back,
+# extensions are updated through their repository instead
+UPDATER_CLASSES = (
+    DemoPreferences,
+    OBJECT_PT_DemoUpdaterPanel
+)
+
 
 def register():
-    # addon_updater_ops._package = 'io_mesh_w3d'
-    # addon_updater_ops.updater.addon = 'io_mesh_w3d'
-    # addon_updater_ops.updater.user = "OpenSAGE"
-    # addon_updater_ops.updater.repo = "OpenSAGE.BlenderPlugin"
-    # addon_updater_ops.updater.website = "https://github.com/OpenSAGE/OpenSAGE.BlenderPlugin"
-    # addon_updater_ops.updater.subfolder_path = "io_mesh_w3d"
-    # addon_updater_ops.updater.include_branch_list = ['master']
-    # addon_updater_ops.updater.verbose = False
-
-    # addon_updater_ops.register(bl_info)
-
     for class_ in CLASSES:
         bpy.utils.register_class(class_)
+
+    if ENABLE_UPDATER and not IS_EXTENSION:
+        addon_updater_ops._package = 'io_mesh_w3d'
+        addon_updater_ops.updater.addon = 'io_mesh_w3d'
+        addon_updater_ops.updater.user = "OpenSAGE"
+        addon_updater_ops.updater.repo = "OpenSAGE.BlenderPlugin"
+        addon_updater_ops.updater.website = "https://github.com/OpenSAGE/OpenSAGE.BlenderPlugin"
+        addon_updater_ops.updater.subfolder_path = "io_mesh_w3d"
+        addon_updater_ops.updater.include_branch_list = ['master']
+        addon_updater_ops.updater.verbose = False
+
+        addon_updater_ops.register(bl_info)
+
+        for class_ in UPDATER_CLASSES:
+            bpy.utils.register_class(class_)
 
     Material.shader = PointerProperty(type=ShaderProperties)
 
@@ -572,7 +591,11 @@ def register():
 
 
 def unregister():
-    #addon_updater_ops.unregister()
+    if ENABLE_UPDATER and not IS_EXTENSION:
+        addon_updater_ops.unregister()
+
+        for class_ in reversed(UPDATER_CLASSES):
+            bpy.utils.unregister_class(class_)
 
     for class_ in reversed(CLASSES):
         bpy.utils.unregister_class(class_)

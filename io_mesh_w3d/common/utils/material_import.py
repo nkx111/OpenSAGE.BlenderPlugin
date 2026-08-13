@@ -5,9 +5,9 @@ import bpy
 import bmesh
 from bpy_extras import node_shader_utils
 
-from io_mesh_w3d.common.utils.helpers import *
-from io_mesh_w3d.w3d.structs.mesh_structs.vertex_material import *
-from io_mesh_w3d.custom_properties import *
+from ...common.utils.helpers import *
+from ...w3d.structs.mesh_structs.vertex_material import *
+from ...custom_properties import *
 
 
 ##########################################################################
@@ -78,7 +78,7 @@ def create_vertex_material(context, principleds, structure, mesh, b_mesh, name, 
     # Iterate through all materials and set their blend mode to Alpha Clip for transparency
     for material in mesh.materials:
         if material:
-            material.blend_method = 'CLIP'
+            set_blend_method(material, 'CLIP')
 
 
 def create_material_from_vertex_material(name, vert_mat):
@@ -90,8 +90,8 @@ def create_material_from_vertex_material(name, vert_mat):
 
     material = bpy.data.materials.new(name)
     material.material_type = 'VERTEX_MATERIAL'
-    material.use_nodes = True
-    material.show_transparent_back = False
+    enable_nodes(material)
+    set_transparency_overlap(material, False)
 
     attributes = {'DEFAULT'}
     attribs = vert_mat.vm_info.attributes
@@ -142,8 +142,9 @@ def create_material_from_shader_material(context, name, shader_mat):
     material.material_type_old = name
     material.material_type = name
     material.texture_path = os.path.dirname(context.filepath)
-    material.use_nodes = True
-    material.show_transparent_back = False
+    enable_nodes(material)
+    set_transparency_overlap(material, False)
+
     material.technique = shader_mat.header.technique
     material.alpha_threshold = 96 / 255
     material.use_backface_culling = True
