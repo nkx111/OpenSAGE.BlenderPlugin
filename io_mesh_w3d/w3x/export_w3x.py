@@ -28,7 +28,9 @@ def save(context, export_settings, data_context):
 
     # directory = os.path.dirname(context.filepath) + os.path.sep
 
-    if 'H' in export_mode and data_context.hierarchy and not export_settings['use_existing_skeleton']:
+    # with an existing skeleton only the reference model is written, the hierarchy stays in its own file
+    writes_hierarchy = 'H' in export_mode and data_context.hierarchy is not None
+    if writes_hierarchy and (export_mode == 'H' or not export_settings['use_existing_skeleton']):
         if export_settings['individual_files']:
             path = filepath_pure + "_SKL" + context.filename_ext
             context.info('Saving file :' + path)

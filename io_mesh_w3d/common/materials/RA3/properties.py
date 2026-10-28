@@ -590,13 +590,13 @@ def OnNrmTextureChanged(self:Material, context):
         math_sqrt.operation = 'SQRT'
         self.node_tree.links.new(math_subtract.outputs['Value'], math_sqrt.inputs[0])
 
-        combine_rgb = create_node_no_repeative(nodes, 'ShaderNodeCombineRGB', "combine_rgb")
-        self.node_tree.links.new(separate_rgb.outputs['Red'], combine_rgb.inputs['R'])  # X
-        self.node_tree.links.new(separate_rgb.outputs['Green'], combine_rgb.inputs['G'])  # Y
-        self.node_tree.links.new(math_sqrt.outputs['Value'], combine_rgb.inputs['B'])  # Z
+        combine_rgb = create_node_no_repeative(nodes, 'ShaderNodeCombineColor', "combine_rgb")
+        self.node_tree.links.new(separate_rgb.outputs['Red'], combine_rgb.inputs['Red'])  # X
+        self.node_tree.links.new(separate_rgb.outputs['Green'], combine_rgb.inputs['Green'])  # Y
+        self.node_tree.links.new(math_sqrt.outputs['Value'], combine_rgb.inputs['Blue'])  # Z
 
         nrm_node = create_node_no_repeative(nodes, "ShaderNodeNormalMap", "nrm_node")
-        self.node_tree.links.new(combine_rgb.outputs['Image'], nrm_node.inputs["Color"])
+        self.node_tree.links.new(combine_rgb.outputs['Color'], nrm_node.inputs["Color"])
         self.node_tree.links.new(nrm_node.outputs["Normal"], principled.node_principled_bsdf.inputs["Normal"])
 
 Material.normal_texture = StringProperty(
