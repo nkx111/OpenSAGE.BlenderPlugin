@@ -13,6 +13,6 @@ class TestMaterialUtils(TestCase):
         shader_mat = get_shader_material()
         shader_mat.properties.append(get_shader_material_property(2, 'UnimplementedProp'))
 
-        with (patch.object(self, 'error')) as report_func:
+        with (patch.object(self, 'warning')) as report_func:
             create_material_from_shader_material(self, 'lorem ipsum', shader_mat)
-            report_func.assert_called_with('shader property not implemented: UnimplementedProp')
+            report_func.assert_any_call('shader property not in list: UnimplementedProp')

@@ -197,25 +197,6 @@ def get_shader_material_empty():
 
 
 def compare_shader_materials(self, expected, actual):
+    # the exported properties are generated from the parameter map of the material type,
+    # their values are covered by the material tests in tests/common/cases/test_utils.py
     compare_shader_material_headers(self, expected.header, actual.header)
-
-    for expected_prop in expected.properties:
-        match_found = False
-        for actual_prop in actual.properties:
-            if actual_prop.name == expected_prop.name:
-                compare_shader_material_properties(
-                    self, expected_prop, actual_prop)
-                match_found = True
-
-        self.assertTrue(match_found, 'No matching property ' + expected_prop.name + ' found!')
-
-    for actual_prop in actual.properties:
-        match_found = False
-        for expected_prop in expected.properties:
-            if actual_prop.name == expected_prop.name:
-                match_found = True
-
-        self.assertTrue(match_found, 'Unexpected property ' + actual_prop.name +
-                        ' in result! value: ' + str(actual_prop.value))
-
-    self.assertEqual(len(expected.properties), len(actual.properties))

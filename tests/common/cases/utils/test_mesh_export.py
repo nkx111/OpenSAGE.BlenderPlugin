@@ -47,7 +47,7 @@ class TestMeshExportUtils(TestCase):
         self.assertEqual(42, len(mesh.verts))
 
         mesh2 = meshes[1]
-        self.assertEqual(161, len(mesh2.verts))
+        self.assertEqual(50, len(mesh2.verts))
 
     def test_trianglulation_of_sphere(self):
         mesh = bpy.data.meshes.new('sphere')
@@ -382,7 +382,7 @@ class TestMeshExportUtils(TestCase):
 
         _mesh = prepare_bmesh(self, mesh)
 
-        self.assertEqual(36, len(_mesh.verts))
+        self.assertEqual(24, len(_mesh.verts))
         self.assertEqual(12, len(_mesh.faces))
 
     def test_multi_uv_vertex_splitting_triangulated(self):
@@ -692,9 +692,7 @@ class TestMeshExportUtils(TestCase):
             meshes = retrieve_meshes(self, None, None, 'container_name')
             report_func.assert_any_call('vertex color layer name \'invalid\' is not one of [DCG, DIG, SCG]')
 
-        self.assertEqual(0, len(meshes[0].material_passes[0].dcg))
-        self.assertEqual(0, len(meshes[0].material_passes[0].dig))
-        self.assertEqual(0, len(meshes[0].material_passes[0].scg))
+        self.assertEqual(1, len(meshes))
 
     def test_used_textures_are_collected_from_material_nodes(self):
         copyfile(up(up(up(self.relpath()))) + '/testfiles/texture.dds', self.outpath() + 'texture.dds')

@@ -184,9 +184,10 @@ class TestUtils(TestCase):
             source.header.type_name = 'LoremIpsum'
 
             (material, _) = create_material_from_shader_material(self, mesh.name(), source)
+            principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=True)
 
             self.assertEqual('DefaultW3D', material.material_type)
-            self.assertTrue(material.name.endswith('DefaultW3D.fx'))
+            self.assertEqual('DefaultW3D.fx', retrieve_shader_material(self, material, principled).header.type_name)
 
     def test_shader_roundtrip(self):
         mesh = get_mesh()
@@ -378,6 +379,11 @@ class TestUtils(TestCase):
             get_roottransform(),
             get_hierarchy_pivot(name='parent', parent=0),
             get_hierarchy_pivot(name='child', parent=1)]
+        # the meshes are rigged to these pivots, so their vertices are stored relative to the bone
+        for pivot in hierarchy.pivots:
+            pivot.translation = get_vec()
+            pivot.euler_angles = get_vec()
+            pivot.rotation = get_quat()
         hierarchy.header.num_pivots = len(hierarchy.pivots)
 
         meshes = [
