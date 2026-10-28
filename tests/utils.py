@@ -21,6 +21,18 @@ def almost_equal(self, x, y, threshold=0.0001):
     self.assertTrue(abs(x - y) < threshold)
 
 
+def create_export_settings(**overrides):
+    # the export operator always passes the full set of settings
+    settings = {
+        'mode': 'HM',
+        'compression': 'U',
+        'use_existing_skeleton': False,
+        'individual_files': False,
+        'create_texture_xmls': False}
+    settings.update(overrides)
+    return settings
+
+
 class TestCase(unittest.TestCase):
     __save_test_data = '--save-test-data' in sys.argv
     __tmp_base = os.path.join(tempfile.gettempdir(), 'io_mesh_w3d-tests')

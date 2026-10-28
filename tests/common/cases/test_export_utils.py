@@ -13,46 +13,46 @@ from tests.common.helpers.collision_box import *
 class TestExportUtils(TestCase):
     @patch('io_mesh_w3d.export_utils.retrieve_data', return_value=None)
     def test_cancels_if_not_retrieve_data(self, retrieve):
-        self.assertEqual({'CANCELLED'}, save_data(self, {'mode': 'M'}))
+        self.assertEqual({'CANCELLED'}, save_data(self, create_export_settings(mode='M')))
 
     def test_retrieve_data_returns_false_if_invalid_mode(self):
         with (patch.object(self, 'error')) as report_func:
-            self.assertIsNone(retrieve_data(self, {'mode': 'INVALID'}))
+            self.assertIsNone(retrieve_data(self, create_export_settings(mode='INVALID')))
             report_func.assert_called_with('unsupported export mode: INVALID, aborting export!')
 
     def test_retrieve_data_returns_false_if_w3d_and_container_name_too_long(self):
         self.filepath = r'C:dir' + os.path.sep + 'dir.dir' + os.path.sep + 'toolongtestfilename'
 
         with (patch.object(self, 'error')) as report_func:
-            self.assertIsNone(retrieve_data(self, {'mode': 'M'}))
+            self.assertIsNone(retrieve_data(self, create_export_settings(mode='M')))
             report_func.assert_called_with('Filename is longer than 16 characters, aborting export!')
 
     @patch('io_mesh_w3d.export_utils.retrieve_hierarchy', return_value=(None, None))
     @patch('io_mesh_w3d.export_utils.create_hlod', return_value=None)
     @patch('io_mesh_w3d.export_utils.retrieve_boxes', return_value=[])
     @patch('io_mesh_w3d.export_utils.retrieve_dazzles', return_value=[])
-    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=([], None))
+    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=[])
     def test_retrieve_data_returns_false_if_M_in_mode_and_no_meshes(
             self, retrieve_meshes, retrieve_dazzles, retrieve_boxes, retrieve_hlod, retrieve_hierarchy):
 
         self.filepath = r'C:dir' + os.path.sep + 'dir.dir' + os.path.sep + 'filename'
 
         with (patch.object(self, 'error')) as report_func:
-            self.assertIsNone(retrieve_data(self, {'mode': 'M'}))
+            self.assertIsNone(retrieve_data(self, create_export_settings(mode='M')))
             report_func.assert_called_with('Scene does not contain any meshes, aborting export!')
 
     @patch('io_mesh_w3d.export_utils.retrieve_hierarchy', return_value=(None, None))
     @patch('io_mesh_w3d.export_utils.create_hlod', return_value=None)
     @patch('io_mesh_w3d.export_utils.retrieve_boxes', return_value=[])
     @patch('io_mesh_w3d.export_utils.retrieve_dazzles', return_value=[])
-    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=([get_mesh(), get_mesh()], None))
+    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=[get_mesh(), get_mesh()])
     @patch.object(W3DMesh, 'validate', return_value=False)
     def test_retrieve_data_returns_false_if_M_in_mode_and_invalid_mesh(
             self, validate, retrieve_meshes, dazzles, boxes, hlod, hiera):
         self.filepath = r'C:dir' + os.path.sep + 'dir.dir' + os.path.sep + 'filename'
 
         with (patch.object(self, 'error')) as report_func:
-            self.assertIsNone(retrieve_data(self, {'mode': 'M'}))
+            self.assertIsNone(retrieve_data(self, create_export_settings(mode='M')))
             report_func.assert_called_with('aborting export!')
         retrieve_meshes.assert_called()
         validate.assert_called()
@@ -61,7 +61,7 @@ class TestExportUtils(TestCase):
     @patch('io_mesh_w3d.export_utils.create_hlod', return_value=None)
     @patch('io_mesh_w3d.export_utils.retrieve_boxes', return_value=[])
     @patch('io_mesh_w3d.export_utils.retrieve_dazzles', return_value=[])
-    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=([get_mesh(), get_mesh()], None))
+    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=[get_mesh(), get_mesh()])
     @patch.object(Hierarchy, 'validate', return_value=False)
     def test_retrieve_data_returns_false_if_H_in_mode_and_invalid_hierarchy(
             self, validate, retrieve_meshes, dazzles, boxes, hlod, hierarchy):
@@ -69,7 +69,7 @@ class TestExportUtils(TestCase):
         self.filepath = r'C:dir' + os.path.sep + 'dir.dir' + os.path.sep + 'filename'
 
         with (patch.object(self, 'error')) as report_func:
-            self.assertIsNone(retrieve_data(self, {'mode': 'H'}))
+            self.assertIsNone(retrieve_data(self, create_export_settings(mode='H')))
             report_func.assert_called_with('aborting export!')
         validate.assert_called()
 
@@ -77,7 +77,7 @@ class TestExportUtils(TestCase):
     @patch('io_mesh_w3d.export_utils.create_hlod', return_value=get_hlod())
     @patch('io_mesh_w3d.export_utils.retrieve_boxes', return_value=[])
     @patch('io_mesh_w3d.export_utils.retrieve_dazzles', return_value=[])
-    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=([get_mesh(), get_mesh()], None))
+    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=[get_mesh(), get_mesh()])
     @patch.object(Hierarchy, 'validate', return_value=True)
     @patch.object(HLod, 'validate', return_value=False)
     def test_retrieve_data_returns_false_if_mode_is_HM_and_invalid_hlod(
@@ -86,7 +86,7 @@ class TestExportUtils(TestCase):
         self.filepath = r'C:dir' + os.path.sep + 'dir.dir' + os.path.sep + 'filename'
 
         with (patch.object(self, 'error')) as report_func:
-            self.assertIsNone(retrieve_data(self, {'mode': 'HM'}))
+            self.assertIsNone(retrieve_data(self, create_export_settings(mode='HM')))
             report_func.assert_called_with('aborting export!')
         retrieve_meshes.assert_called()
         h_validate.assert_called()
@@ -96,7 +96,7 @@ class TestExportUtils(TestCase):
     @patch('io_mesh_w3d.export_utils.create_hlod', return_value=get_hlod())
     @patch('io_mesh_w3d.export_utils.retrieve_boxes', return_value=[get_collision_box()])
     @patch('io_mesh_w3d.export_utils.retrieve_dazzles', return_value=[])
-    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=([get_mesh(), get_mesh()], None))
+    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=[get_mesh(), get_mesh()])
     @patch.object(Hierarchy, 'validate', return_value=True)
     @patch.object(HLod, 'validate', return_value=True)
     @patch.object(CollisionBox, 'validate', return_value=False)
@@ -106,7 +106,7 @@ class TestExportUtils(TestCase):
         self.filepath = r'C:dir' + os.path.sep + 'dir.dir' + os.path.sep + 'filename'
 
         with (patch.object(self, 'error')) as report_func:
-            self.assertIsNone(retrieve_data(self, {'mode': 'HM'}))
+            self.assertIsNone(retrieve_data(self, create_export_settings(mode='HM')))
             report_func.assert_called_with('aborting export!')
         retrieve_meshes.assert_called()
         h_validate.assert_called()
@@ -117,7 +117,7 @@ class TestExportUtils(TestCase):
     @patch('io_mesh_w3d.export_utils.create_hlod', return_value=None)
     @patch('io_mesh_w3d.export_utils.retrieve_boxes', return_value=[])
     @patch('io_mesh_w3d.export_utils.retrieve_dazzles', return_value=[])
-    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=([], None))
+    @patch('io_mesh_w3d.export_utils.retrieve_meshes', return_value=[])
     @patch.object(Animation, 'validate', return_value=False)
     def test_retrieve_data_returns_false_if_A_in_mode_and_invalid_animation(
             self, validate, retrieve_meshes, dazzles, boxes, hlod, hiera):
@@ -125,7 +125,7 @@ class TestExportUtils(TestCase):
         self.filepath = r'C:dir' + os.path.sep + 'dir.dir' + os.path.sep + 'filename'
 
         with (patch.object(self, 'error')) as report_func:
-            self.assertIsNone(retrieve_data(self, {'mode': 'A', 'compression': 'U'}))
+            self.assertIsNone(retrieve_data(self, create_export_settings(mode='A')))
             report_func.assert_called_with('aborting export!')
 
         validate.assert_called()

@@ -85,12 +85,12 @@ class TestRoundtripW3X(TestCase):
 
         # export
         self.filepath = self.outpath() + 'output'
-        export_settings = {'mode': 'HAM', 'compression': 'U', 'individual_files': False, 'create_texture_xmls': True}
+        export_settings = create_export_settings(mode='HAM', create_texture_xmls=True)
         save_data(self, export_settings)
 
         # check created files
         self.assertTrue(os.path.exists(self.outpath() + 'output.w3x'))
-        self.assertTrue(os.path.exists(self.outpath() + 'texture.xml'))
+        self.assertTrue(os.path.exists(self.outpath() + 'Texture.xml'))
 
         # reset scene
         bpy.ops.wm.read_homefile(app_template='')

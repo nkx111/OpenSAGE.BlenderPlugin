@@ -27,7 +27,7 @@ class TestBoxExportUtils(TestCase):
 
         link_object_to_active_scene(box_object, bpy.context.scene.collection)
 
-        boxes = retrieve_boxes('anything')
+        boxes = retrieve_boxes(self, 'anything')
 
         self.assertEqual(1, len(boxes))
         actual = boxes[0]
@@ -50,7 +50,7 @@ class TestBoxExportUtils(TestCase):
 
         link_object_to_active_scene(box_object, bpy.context.scene.collection)
 
-        boxes = retrieve_boxes('anything')
+        boxes = retrieve_boxes(self, 'anything')
 
         self.assertEqual(1, len(boxes))
         actual = boxes[0]

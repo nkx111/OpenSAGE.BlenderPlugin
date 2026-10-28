@@ -11,7 +11,7 @@ from tests.common.helpers.collision_box import get_collision_box
 from tests.common.helpers.hierarchy import *
 from tests.common.helpers.hlod import *
 from tests.common.helpers.mesh import get_mesh
-from tests.utils import TestCase
+from tests.utils import TestCase, create_export_settings
 from tests.w3d.helpers.dazzle import get_dazzle
 from tests.w3d.helpers.compressed_animation import get_compressed_animation
 
@@ -34,7 +34,7 @@ class TestRoundtripW3D(TestCase):
 
         # export
         self.filepath = self.outpath() + 'output_skn'
-        export_settings = {'mode': 'HM', 'use_existing_skeleton': True}
+        export_settings = create_export_settings(mode='HM', use_existing_skeleton=True)
         save_data(self, export_settings)
 
         self.filepath = self.outpath() + 'testhiera_skl'
@@ -83,7 +83,7 @@ class TestRoundtripW3D(TestCase):
 
         # export
         self.filepath = self.outpath() + 'output_skn'
-        export_settings = {'mode': 'HM', 'use_existing_skeleton': True}
+        export_settings = create_export_settings(mode='HM', use_existing_skeleton=True)
         save_data(self, export_settings)
 
         self.filepath = self.outpath() + 'testhiera_skl'
@@ -128,7 +128,7 @@ class TestRoundtripW3D(TestCase):
 
         # export
         self.filepath = self.outpath() + 'output'
-        export_settings = {'mode': 'HAM', 'compression': 'U'}
+        export_settings = create_export_settings(mode='HAM')
         save_data(self, export_settings)
 
         # reset scene
@@ -156,9 +156,7 @@ class TestRoundtripW3D(TestCase):
 
         # export
         self.filepath = self.outpath() + 'output'
-        export_settings = {'mode': 'HM',
-                           'compression': 'U',
-                           'use_existing_skeleton': False}
+        export_settings = create_export_settings(mode='HM', use_existing_skeleton=False)
         save_data(self, export_settings)
 
         # reset scene
@@ -190,7 +188,7 @@ class TestRoundtripW3D(TestCase):
 
         # export
         self.filepath = self.outpath() + 'output'
-        export_settings = {'mode': 'HAM', 'compression': 'U'}
+        export_settings = create_export_settings(mode='HAM')
         save_data(self, export_settings)
 
         # reset scene
@@ -227,7 +225,7 @@ class TestRoundtripW3D(TestCase):
 
         # export
         self.filepath = self.outpath() + 'output'
-        export_settings = {'mode': 'HAM', 'compression': 'TC'}
+        export_settings = create_export_settings(mode='HAM', compression='TC')
         save_data(self, export_settings)
 
         # reset scene
@@ -260,7 +258,7 @@ class TestRoundtripW3D(TestCase):
 
         # export
         self.filepath = self.outpath() + 'output'
-        export_settings = {'mode': 'HM', 'use_existing_skeleton': False}
+        export_settings = create_export_settings(mode='HM', use_existing_skeleton=False)
         save_data(self, export_settings)
 
         # reset scene

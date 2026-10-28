@@ -15,7 +15,7 @@ from tests.utils import *
 
 class TestExportW3D(TestCase):
     def test_does_not_apply_extension_if_already_there(self):
-        export_settings = {'mode': 'M', 'compression': 'U'}
+        export_settings = create_export_settings(mode='M')
 
         data_context = DataContext(
             container_name='containerName',
@@ -29,7 +29,7 @@ class TestExportW3D(TestCase):
         self.assertFalse(os.path.exists(self.filepath + '.w3d'))
 
     def test_only_mesh_chunk_is_written_if_mode_M(self):
-        export_settings = {'mode': 'M', 'compression': 'U'}
+        export_settings = create_export_settings(mode='M')
 
         data_context = DataContext(
             container_name='containerName',
@@ -55,7 +55,7 @@ class TestExportW3D(TestCase):
         self.assertEqual(1, found_meshes)
 
     def test_warning_is_shown_if_M_and_multiple_meshes(self):
-        export_settings = {'mode': 'M', 'compression': 'U'}
+        export_settings = create_export_settings(mode='M')
 
         data_context = DataContext(
             container_name='containerName',
@@ -70,7 +70,7 @@ class TestExportW3D(TestCase):
                 'Scene does contain multiple meshes, exporting only the first with export mode M!')
 
     def test_error_is_shown_if_unsupported_export_mode(self):
-        export_settings = {'mode': 'UNSUPPORTED', 'compression': 'U'}
+        export_settings = create_export_settings(mode='UNSUPPORTED')
 
         data_context = DataContext(
             container_name='containerName',
@@ -84,7 +84,7 @@ class TestExportW3D(TestCase):
             error_func.assert_called_with('unsupported export mode \'UNSUPPORTED\', aborting export!')
 
     def test_hierarchy_is_written_if_mode_HM_and_not_use_existing_skeleton(self):
-        export_settings = {'mode': 'HM', 'compression': 'U', 'use_existing_skeleton': False}
+        export_settings = create_export_settings(mode='HM', use_existing_skeleton=False)
 
         hierarchy_name = 'TestHiera_SKL'
 
@@ -118,7 +118,7 @@ class TestExportW3D(TestCase):
         self.assertTrue(hierarchy_found)
 
     def test_no_hierarchy_is_written_if_mode_HM_and_use_existing_skeleton(self):
-        export_settings = {'mode': 'HM', 'compression': 'U', 'use_existing_skeleton': True}
+        export_settings = create_export_settings(mode='HM', use_existing_skeleton=True)
 
         hierarchy_name = 'TestHiera_SKL'
 
@@ -149,7 +149,7 @@ class TestExportW3D(TestCase):
         file.close()
 
     def test_hlod_hierarchy_name_is_container_name_if_export_mode_HM_and_not_use_existing_skeleton(self):
-        export_settings = {'mode': 'HM', 'compression': 'U', 'use_existing_skeleton': False}
+        export_settings = create_export_settings(mode='HM', use_existing_skeleton=False)
 
         hierarchy_name = 'TestHiera_SKL'
 
@@ -169,7 +169,7 @@ class TestExportW3D(TestCase):
         self.assertEqual('containerName', data_context.hlod.header.hierarchy_name)
 
     def test_hierarchy_name_is_container_name_for_hlod_and_animation_if_export_mode_HAM(self):
-        export_settings = {'mode': 'HAM', 'compression': 'U', 'use_existing_skeleton': False}
+        export_settings = create_export_settings(mode='HAM')
 
         hierarchy_name = 'TestHiera_SKL'
 

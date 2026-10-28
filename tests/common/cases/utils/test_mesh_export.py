@@ -26,7 +26,7 @@ class TestMeshExportUtils(TestCase):
 
         self.assertTrue('Cube' in bpy.data.objects)
 
-        meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+        meshes = retrieve_meshes(self, None, None, 'container_name')
 
         self.assertEqual(1, len(meshes))
 
@@ -39,7 +39,7 @@ class TestMeshExportUtils(TestCase):
         self.assertTrue('Cube' in bpy.data.objects)
         self.assertTrue('Cube2' in bpy.data.objects)
 
-        meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+        meshes = retrieve_meshes(self, None, None, 'container_name')
 
         self.assertEqual(2, len(meshes))
 
@@ -64,15 +64,16 @@ class TestMeshExportUtils(TestCase):
         coll = get_collection()
         coll.objects.link(sphere)
 
-        meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+        meshes = retrieve_meshes(self, None, None, 'container_name')
 
         self.assertEqual(62, len(meshes[0].verts))
         self.assertEqual(120, len(meshes[0].triangles))
 
     def test_used_texture_file_ending_is_correct(self):
+        copyfile(up(up(up(self.relpath()))) + '/testfiles/texture.dds', self.outpath() + 'texture.dds')
         create_mesh(self, get_mesh(), get_collection())
 
-        meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+        meshes = retrieve_meshes(self, None, None, 'container_name')
 
         mesh = meshes[0]
         self.assertEqual(mesh.textures[0].file, 'texture.dds')
@@ -87,7 +88,7 @@ class TestMeshExportUtils(TestCase):
             if mesh_ob.mode != 'EDIT':
                 bpy.ops.object.mode_set(mode='EDIT')
 
-        meshes, _ = retrieve_meshes(self, None, None, 'containerName')
+        meshes = retrieve_meshes(self, None, None, 'containerName')
 
         compare_meshes(self, mesh, meshes[0])
 
@@ -140,7 +141,7 @@ class TestMeshExportUtils(TestCase):
                         vertex.groups[0].weight = 1.0
 
         with (patch.object(self, 'warning')) as report_func:
-            mesh_structs, _ = retrieve_meshes(self, hierarchy, rig, 'container_name')
+            mesh_structs = retrieve_meshes(self, hierarchy, rig, 'container_name')
             for mesh_object in meshes:
                 for i, vertex in enumerate(mesh_object.data.vertices):
                     if vertex.groups and len(vertex.groups) > 1:
@@ -168,7 +169,7 @@ class TestMeshExportUtils(TestCase):
         meshes[0].vertex_groups[3].remove(expected_vertices)
 
         with (patch.object(self, 'error')) as report_func:
-            mesh_structs, _ = retrieve_meshes(self, hierarchy, rig, 'container_name')
+            mesh_structs = retrieve_meshes(self, hierarchy, rig, 'container_name')
 
             self.assertEqual(0, len(mesh_structs))
             self.assertEqual(len(expected_vertices), report_func.call_count)
@@ -193,7 +194,7 @@ class TestMeshExportUtils(TestCase):
         meshes[0].vertex_groups['number3'].add(expected_vertices, 0.4, 'REPLACE')
 
         with (patch.object(self, 'error')) as report_func:
-            mesh_structs, _ = retrieve_meshes(self, hierarchy, rig, 'container_name')
+            mesh_structs = retrieve_meshes(self, hierarchy, rig, 'container_name')
 
             self.assertEqual(0, len(mesh_structs))
             self.assertEqual(len(expected_vertices), report_func.call_count)
@@ -243,7 +244,7 @@ class TestMeshExportUtils(TestCase):
         rig = get_or_create_skeleton(hierarchy, coll)
 
         with (patch.object(self, 'error')) as report_func:
-            mesh_structs, _ = retrieve_meshes(self, hierarchy, rig, 'container_name')
+            mesh_structs = retrieve_meshes(self, hierarchy, rig, 'container_name')
 
             self.assertEqual(0, len(mesh_structs))
             self.assertEqual(2, report_func.call_count)
@@ -285,7 +286,7 @@ class TestMeshExportUtils(TestCase):
         rig_mesh(mesh2, hierarchy, rig, sub_obj2)
 
         with (patch.object(self, 'error')) as report_func:
-            mesh_structs, _ = retrieve_meshes(self, hierarchy, rig, 'container_name')
+            mesh_structs = retrieve_meshes(self, hierarchy, rig, 'container_name')
 
             self.assertEqual(2, len(mesh_structs))
             self.assertEqual(0, report_func.call_count)
@@ -297,7 +298,7 @@ class TestMeshExportUtils(TestCase):
         mesh.material_passes[1].tx_stages = []
         create_mesh(self, mesh, get_collection())
 
-        mesh_structs, textures = retrieve_meshes(self, None, None, 'container_name')
+        mesh_structs = retrieve_meshes(self, None, None, 'container_name')
 
         self.assertEqual(0, len(mesh_structs[0].material_passes[0].tx_stages))
 
@@ -467,7 +468,7 @@ class TestMeshExportUtils(TestCase):
         self.assertEqual(1, len(mesh.uv_layers))
 
         with (patch.object(self, 'warning')) as report_func:
-            meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+            meshes = retrieve_meshes(self, None, None, 'container_name')
             report_func.assert_called_with('mesh \'mesh_object\' vertex 8 is not connected to any face!')
 
         self.assertEqual(1, len(meshes))
@@ -505,7 +506,7 @@ class TestMeshExportUtils(TestCase):
         self.assertEqual(0, len(mesh.uv_layers))
 
         with (patch.object(self, 'warning')) as report_func:
-            meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+            meshes = retrieve_meshes(self, None, None, 'container_name')
             report_func.assert_called_with('mesh \'mesh_object\' vertex 8 is not connected to any face!')
 
         self.assertEqual(1, len(meshes))
@@ -536,7 +537,7 @@ class TestMeshExportUtils(TestCase):
         bpy.context.view_layer.objects.active = mesh_ob
         mesh_ob.select_set(True)
 
-        meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+        meshes = retrieve_meshes(self, None, None, 'container_name')
 
         self.assertEqual(0, len(meshes[0].material_passes[0].tx_coords))
 
@@ -562,7 +563,7 @@ class TestMeshExportUtils(TestCase):
         bpy.context.view_layer.objects.active = mesh_ob
         mesh_ob.select_set(True)
 
-        meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+        meshes = retrieve_meshes(self, None, None, 'container_name')
 
         self.assertEqual(0, len(meshes[0].material_passes[0].tx_stages))
 
@@ -597,7 +598,7 @@ class TestMeshExportUtils(TestCase):
         constraint.target = bpy.context.scene.camera
 
         with (patch.object(self, 'warning')) as report_func:
-            meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+            meshes = retrieve_meshes(self, None, None, 'container_name')
             report_func.assert_called_with(
                 'mesh \'mesh\' has multiple constraints applied, only \'Copy Rotation\' OR \'Damped Track\' are supported!')
 
@@ -612,7 +613,7 @@ class TestMeshExportUtils(TestCase):
         constraint = mesh_ob.constraints.new('COPY_ROTATION')
         constraint.target = bpy.context.scene.camera
 
-        meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+        meshes = retrieve_meshes(self, None, None, 'container_name')
 
         self.assertTrue(meshes[0].is_camera_oriented())
         self.assertFalse(meshes[0].is_camera_aligned())
@@ -625,7 +626,7 @@ class TestMeshExportUtils(TestCase):
         constraint = mesh_ob.constraints.new('DAMPED_TRACK')
         constraint.target = bpy.context.scene.camera
 
-        meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+        meshes = retrieve_meshes(self, None, None, 'container_name')
 
         self.assertTrue(meshes[0].is_camera_aligned())
         self.assertFalse(meshes[0].is_camera_oriented())
@@ -639,7 +640,7 @@ class TestMeshExportUtils(TestCase):
         constraint.target = bpy.context.scene.camera
 
         with (patch.object(self, 'warning')) as report_func:
-            meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+            meshes = retrieve_meshes(self, None, None, 'container_name')
             report_func.assert_called_with('mesh \'mesh\' constraint \'Copy Location\' is not supported!')
 
         self.assertFalse(meshes[0].is_camera_oriented())
@@ -670,7 +671,7 @@ class TestMeshExportUtils(TestCase):
                 val.value = i
 
         with (patch.object(self, 'warning')) as report_func:
-            meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+            meshes = retrieve_meshes(self, None, None, 'container_name')
             report_func.assert_any_call(
                 'name of face map \'InvalidSurfaceType\' is not one of valid surface types: ' +
                 str(surface_types))
@@ -688,14 +689,14 @@ class TestMeshExportUtils(TestCase):
         new_vertex_color_layer(mesh, 'invalid')
 
         with (patch.object(self, 'warning')) as report_func:
-            meshes, _ = retrieve_meshes(self, None, None, 'container_name')
+            meshes = retrieve_meshes(self, None, None, 'container_name')
             report_func.assert_any_call('vertex color layer name \'invalid\' is not one of [DCG, DIG, SCG]')
 
         self.assertEqual(0, len(meshes[0].material_passes[0].dcg))
         self.assertEqual(0, len(meshes[0].material_passes[0].dig))
         self.assertEqual(0, len(meshes[0].material_passes[0].scg))
 
-    def test_mesh_export_textures_end_with_tga(self):
+    def test_used_textures_are_collected_from_material_nodes(self):
         copyfile(up(up(up(self.relpath()))) + '/testfiles/texture.dds', self.outpath() + 'texture.dds')
         self.file_format = 'W3D'
         mesh = bpy.data.meshes.new('mesh_cube')
@@ -717,6 +718,10 @@ class TestMeshExportUtils(TestCase):
         bpy.context.view_layer.objects.active = mesh_ob
         mesh_ob.select_set(True)
 
-        _, used_textures = retrieve_meshes(self, None, None, 'container_name')
+        retrieve_meshes(self, None, None, 'container_name')
 
-        self.assertEqual('texture.tga', used_textures[0])
+        used_textures = get_used_textures_global_tree()
+
+        self.assertEqual(1, len(used_textures))
+        self.assertEqual('texture', used_textures[0][0])
+        self.assertTrue(used_textures[0][1].endswith('texture.dds'))

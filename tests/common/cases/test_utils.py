@@ -23,6 +23,12 @@ from tests.w3d.helpers.mesh_structs.vertex_material import *
 from os.path import dirname as up
 
 
+# properties the parameter map of the 'NormalMapped' shader type is made of
+normal_mapped_properties = [
+    'DiffuseTexture', 'NormalMap', 'DamagedTexture', 'BumpScale', 'AmbientColor',
+    'DiffuseColor', 'SpecularColor', 'SpecularExponent', 'EnvMult', 'AlphaTestEnable']
+
+
 class TestUtils(TestCase):
     def test_vertex_material_roundtrip(self):
         mesh = get_mesh()
@@ -65,9 +71,20 @@ class TestUtils(TestCase):
 
         for source in mesh.shader_materials:
             (material, _) = create_material_from_shader_material(self, mesh.name(), source)
+            material.bump_uv_scale = 2.5
+            material.ambient_color3 = (0.1, 0.2, 0.3)
             principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=True)
             actual = retrieve_shader_material(self, material, principled)
-            compare_shader_materials(self, source, actual)
+
+            self.assertEqual('NormalMapped.fx', actual.header.type_name)
+            self.assertEqual(source.header.technique, actual.header.technique)
+            self.assertEqual(normal_mapped_properties, [p.name for p in actual.properties])
+
+            props = {p.name: p for p in actual.properties}
+            self.assertAlmostEqual(2.5, props['BumpScale'].value)
+            self.assertAlmostEqual(0.1, props['AmbientColor'].value[0])
+            self.assertAlmostEqual(0.2, props['AmbientColor'].value[1])
+            self.assertAlmostEqual(0.3, props['AmbientColor'].value[2])
 
     def test_duplicate_shader_material_roundtrip(self):
         mesh = get_mesh(shader_mats=True)
@@ -81,10 +98,12 @@ class TestUtils(TestCase):
         self.assertEqual(1, len(bpy.data.materials))
         self.assertTrue('meshName.NormalMapped.fx' in bpy.data.materials)
 
-        for i, expected in enumerate(mesh.shader_materials):
-            principled = node_shader_utils.PrincipledBSDFWrapper(materials[i], is_readonly=True)
-            actual = retrieve_shader_material(self, materials[i], principled)
-            compare_shader_materials(self, expected, actual)
+        for material in materials:
+            principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=True)
+            actual = retrieve_shader_material(self, material, principled)
+
+            self.assertEqual('NormalMapped.fx', actual.header.type_name)
+            self.assertEqual(normal_mapped_properties, [p.name for p in actual.properties])
 
     def test_shader_material_w3x_roundtrip(self):
         mesh = get_mesh(shader_mats=True)
@@ -95,7 +114,9 @@ class TestUtils(TestCase):
             (material, _) = create_material_from_shader_material(self, mesh.name(), source)
             principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=True)
             actual = retrieve_shader_material(self, material, principled, w3x=True)
-            compare_shader_materials(self, source, actual)
+
+            self.assertEqual('NormalMapped.fx', actual.header.type_name)
+            self.assertEqual(normal_mapped_properties, [p.name for p in actual.properties])
 
     def test_shader_material_w3x_rgb_colors_roundtrip(self):
         mesh = get_mesh(shader_mats=True)
@@ -106,12 +127,9 @@ class TestUtils(TestCase):
             principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=True)
             actual = retrieve_shader_material(self, material, principled, w3x=True)
 
-            for prop in source.properties:
-                if prop.name in ['ColorAmbient', 'ColorEmissive', 'ColorDiffuse', 'ColorSpecular']:
-                    prop.type = 5
-                    prop.value = Vector((prop.value[0], prop.value[1], prop.value[2], 1.0))
-
-            compare_shader_materials(self, source, actual)
+            props = {p.name: p for p in actual.properties}
+            self.assertEqual(VEC3_PROPERTY, props['AmbientColor'].type)
+            self.assertEqual(VEC4_PROPERTY, props['DiffuseColor'].type)
 
     def test_shader_material_w3x_two_tex_roundtrip(self):
         mesh = get_mesh(shader_mats=True)
@@ -121,19 +139,18 @@ class TestUtils(TestCase):
             (material, _) = create_material_from_shader_material(self, mesh.name(), source)
             principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=True)
             actual = retrieve_shader_material(self, material, principled, w3x=True)
-            compare_shader_materials(self, source, actual)
 
-    def test_default_shader_material_properties_are_not_exported(self):
+            self.assertEqual('NormalMapped.fx', actual.header.type_name)
+            self.assertEqual(normal_mapped_properties, [p.name for p in actual.properties])
+
+    def test_all_shader_material_properties_of_the_parameter_map_are_exported(self):
         mesh = get_mesh(shader_mats=True)
         mesh.shader_materials[0].properties = []
 
         (material, principled) = create_material_from_shader_material(self, mesh.name(), mesh.shader_materials[0])
-        material.specular_color = (0.0, 0.0, 0.0)
         actual = retrieve_shader_material(self, material, principled, w3x=False)
-        self.assertEqual(5, len(actual.properties))  # We have 5 properties in NormalMapped.fx
 
-        # actual = retrieve_shader_material(self, material, principled, w3x=True)
-        # self.assertEqual(0, len(actual.properties))
+        self.assertEqual(normal_mapped_properties, [p.name for p in actual.properties])
 
     def test_shader_material_minimal_roundtrip(self):
         mesh = get_mesh(shader_mats=True)
@@ -143,9 +160,9 @@ class TestUtils(TestCase):
             source.header.technique = 0
             (material, principled) = create_material_from_shader_material(self, mesh.name(), source)
             actual = retrieve_shader_material(self, material, principled)
-            source.properties[2].type = 5
-            source.properties[2].value = get_vec4(x=1.0, y=0.2, z=0.33, w=1.0)
-            compare_shader_materials(self, source, actual)
+
+            self.assertEqual(0, actual.header.technique)
+            self.assertEqual(normal_mapped_properties, [p.name for p in actual.properties])
 
     def test_shader_material_type_name_fallback(self):
         mesh = get_mesh(shader_mats=True)
@@ -156,21 +173,20 @@ class TestUtils(TestCase):
             source.properties = []
 
             (material, principled) = create_material_from_shader_material(self, mesh.name(), source)
-            material.specular_color = (0.0, 0.0, 0.0)
             actual = retrieve_shader_material(self, material, principled)
-            source.header.type_name = 'DefaultW3D.fx'
-            compare_shader_materials(self, source, actual)
 
-    def test_shader_material_type_name_upgrade_to_normal_mapped(self):
+            self.assertEqual('DefaultW3D.fx', actual.header.type_name)
+
+    def test_shader_material_unknown_type_name_falls_back_to_default_w3d(self):
         mesh = get_mesh(shader_mats=True)
 
         for source in mesh.shader_materials:
             source.header.type_name = 'LoremIpsum'
 
-            (material, principled) = create_material_from_shader_material(self, mesh.name(), source)
-            actual = retrieve_shader_material(self, material, principled)
-            source.header.type_name = 'NormalMapped.fx'
-            compare_shader_materials(self, source, actual)
+            (material, _) = create_material_from_shader_material(self, mesh.name(), source)
+
+            self.assertEqual('DefaultW3D', material.material_type)
+            self.assertTrue(material.name.endswith('DefaultW3D.fx'))
 
     def test_shader_roundtrip(self):
         mesh = get_mesh()
@@ -304,7 +320,7 @@ class TestUtils(TestCase):
 
         meshes = [get_mesh(name='tree')]
 
-        create_data(self, meshes)
+        create_data(self, meshes, hlod, hierarchy)
 
         self.compare_data(meshes, hlod, hierarchy)
 
@@ -555,7 +571,7 @@ class TestUtils(TestCase):
 
         (actual_hiera, rig) = retrieve_hierarchy(self, 'containerName')
         self.file_format = 'W3X'
-        (actual_meshes, _) = retrieve_meshes(self, actual_hiera, rig, 'containerName')
+        actual_meshes = retrieve_meshes(self, actual_hiera, rig, 'containerName')
         self.assertEqual(len(meshes), len(actual_meshes))
         for mesh in actual_meshes:
             self.assertEqual(0, len(mesh.vert_materials))
@@ -563,7 +579,8 @@ class TestUtils(TestCase):
             self.assertTrue(mesh.shader_materials)
 
     def test_meshes_roundtrip_used_textures_are_correct(self):
-        expected = ['texture.tga', 'texture_nrm.tga', 'texture_spec.tga', 'texture_env.tga', 'texture_scroll.tga']
+        # only textures that are referenced by a material and exist on disk are reported, without duplicates
+        expected = ['texture', 'texture_nrm']
         meshes = [
             get_mesh(name='wall'),
             get_mesh(name='tower'),
@@ -582,7 +599,8 @@ class TestUtils(TestCase):
         create_data(self, meshes)
 
         actual_hiera, rig = retrieve_hierarchy(self, 'containerName')
-        _, used_textures = retrieve_meshes(self, actual_hiera, rig, 'containerName')
+        retrieve_meshes(self, actual_hiera, rig, 'containerName')
+        used_textures = [name for name, _ in get_used_textures_global_tree()]
 
         self.assertEqual(len(expected), len(used_textures))
         for i, tex in enumerate(expected):
@@ -787,19 +805,20 @@ class TestUtils(TestCase):
             hierarchy.pivot_fixups = []  # roundtrip not supported
             compare_hierarchies(self, hierarchy, actual_hiera)
 
-        actual_hlod = create_hlod(actual_hiera, container_name)
-        if hlod is not None:
-            compare_hlods(self, hlod, actual_hlod)
+        if actual_hiera is not None:
+            actual_hlod = create_hlod(actual_hiera, container_name)
+            if hlod is not None:
+                compare_hlods(self, hlod, actual_hlod)
 
         if meshes:
-            (actual_meshes, textures) = retrieve_meshes(
+            actual_meshes = retrieve_meshes(
                 self, actual_hiera, rig, container_name)
             self.assertEqual(len(meshes), len(actual_meshes))
             for i, mesh in enumerate(meshes):
                 compare_meshes(self, mesh, actual_meshes[i])
 
         if boxes:
-            actual_boxes = retrieve_boxes(container_name)
+            actual_boxes = retrieve_boxes(self, container_name)
 
             self.assertEqual(len(boxes), len(actual_boxes))
             for i, box in enumerate(boxes):

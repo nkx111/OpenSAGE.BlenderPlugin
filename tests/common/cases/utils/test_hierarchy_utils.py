@@ -19,6 +19,13 @@ def add_bone(armature, name):
     bone.tail = Vector((0.0, 1.0, 0.0))
 
 
+def create_armature(collection, name='skele'):
+    armature = bpy.data.armatures.new('armature')
+    rig = bpy.data.objects.new(name, armature)
+    collection.objects.link(rig)
+    return rig
+
+
 class TestHierarchyUtils(TestCase):
     def test_hierarchy_roundtrip(self):
         hierarchy = get_hierarchy()
@@ -156,6 +163,7 @@ class TestHierarchyUtils(TestCase):
         create_mesh(self, get_mesh('mesh2'), collection)
         create_mesh(self, get_mesh('mesh3'), collection)
         create_mesh(self, get_mesh('mesh4'), collection)
+        create_armature(collection)
 
         hierarchy, _ = retrieve_hierarchy(self, 'lorem ipsum')
 
@@ -177,6 +185,8 @@ class TestHierarchyUtils(TestCase):
         bpy.data.objects['mesh2'].parent = bpy.data.objects['mesh1']
         bpy.data.objects['mesh3'].parent = bpy.data.objects['mesh2']
         bpy.data.objects['mesh4'].parent = bpy.data.objects['mesh1']
+
+        create_armature(collection)
 
         hierarchy, _ = retrieve_hierarchy(self, 'lorem ipsum')
 
@@ -202,6 +212,8 @@ class TestHierarchyUtils(TestCase):
         bpy.data.objects['mesh1'].parent = bpy.data.objects['mesh4']
         bpy.data.objects['mesh2'].parent = bpy.data.objects['mesh3']
         bpy.data.objects['mesh3'].parent = bpy.data.objects['mesh4']
+
+        create_armature(collection)
 
         hierarchy, _ = retrieve_hierarchy(self, 'lorem ipsum')
 
