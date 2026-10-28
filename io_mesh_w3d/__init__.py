@@ -12,12 +12,12 @@ from io_mesh_w3d.bone_volume_export import *
 
 from io_mesh_w3d.blender_addon_updater import addon_updater_ops
 
-VERSION = (0, 8, 2)
+VERSION = (0, 8, 3)
 
 bl_info = {
     'name': 'Import/Export Westwood W3D Format (.w3d/.w3x)',
     'author': 'OpenSage Developers',
-    'version': (0, 8, 2),
+    'version': (0, 8, 3),
     "blender": (2, 90, 0),
     'location': 'File > Import/Export > Westwood W3D (.w3d/.w3x)',
     'description': 'Import or Export the Westwood W3D-Format (.w3d/.w3x)',
@@ -526,7 +526,7 @@ class PreferencesPanel(bpy.types.AddonPreferences):
         col.operator("addonname.remove_texture_path", icon='REMOVE', text="").index = self.active_path_index
 
 
-        addon_updater_ops.update_settings_ui(self, context)
+        #addon_updater_ops.update_settings_ui(self, context)
 
 
 CLASSES = (
@@ -546,21 +546,21 @@ CLASSES = (
     Operator_MessageBox,
     Operator_ImportMaterialProperties,
     PreferencesPanel,
-    OBJECT_PT_DemoUpdaterPanel
+    #OBJECT_PT_DemoUpdaterPanel
 )
 
 
 def register():
-    addon_updater_ops._package = 'io_mesh_w3d'
-    addon_updater_ops.updater.addon = 'io_mesh_w3d'
-    addon_updater_ops.updater.user = "OpenSAGE"
-    addon_updater_ops.updater.repo = "OpenSAGE.BlenderPlugin"
-    addon_updater_ops.updater.website = "https://github.com/OpenSAGE/OpenSAGE.BlenderPlugin"
-    addon_updater_ops.updater.subfolder_path = "io_mesh_w3d"
-    addon_updater_ops.updater.include_branch_list = ['master']
-    addon_updater_ops.updater.verbose = False
+    # addon_updater_ops._package = 'io_mesh_w3d'
+    # addon_updater_ops.updater.addon = 'io_mesh_w3d'
+    # addon_updater_ops.updater.user = "OpenSAGE"
+    # addon_updater_ops.updater.repo = "OpenSAGE.BlenderPlugin"
+    # addon_updater_ops.updater.website = "https://github.com/OpenSAGE/OpenSAGE.BlenderPlugin"
+    # addon_updater_ops.updater.subfolder_path = "io_mesh_w3d"
+    # addon_updater_ops.updater.include_branch_list = ['master']
+    # addon_updater_ops.updater.verbose = False
 
-    addon_updater_ops.register(bl_info)
+    # addon_updater_ops.register(bl_info)
 
     for class_ in CLASSES:
         bpy.utils.register_class(class_)
@@ -572,7 +572,7 @@ def register():
 
 
 def unregister():
-    addon_updater_ops.unregister()
+    #addon_updater_ops.unregister()
 
     for class_ in reversed(CLASSES):
         bpy.utils.unregister_class(class_)

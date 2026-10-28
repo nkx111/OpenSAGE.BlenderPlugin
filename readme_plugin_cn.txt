@@ -18,6 +18,8 @@ GitHub地址：https://github.com/nkx111/OpenSAGE.BlenderPlugin
 1. 同时导入和管理多个动画
 2. 动画透明度channel问题、多channel动画导出疑似存在异常
 
+2025/8/21(0.8.3)更新：暂时移除了blender_addon_updater的功能
+
 2025/8/10(0.8.2) 更新：
 修复了建筑模型的贴图镂空显示
 
