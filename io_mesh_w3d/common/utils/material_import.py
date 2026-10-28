@@ -144,7 +144,6 @@ def create_material_from_shader_material(context, name, shader_mat):
     material.texture_path = os.path.dirname(context.filepath)
     enable_nodes(material)
     set_transparency_overlap(material, False)
-
     material.technique = shader_mat.header.technique
     material.alpha_threshold = 96 / 255
     material.use_backface_culling = True

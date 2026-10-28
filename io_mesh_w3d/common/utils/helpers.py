@@ -269,6 +269,18 @@ def find_texture_from_path(path_list, file):
     img.alpha_mode = 'STRAIGHT'
     return img
 
+def get_addon_package():
+    # add-ons installed as extension are imported as 'bl_ext.<repository>.<add-on>'
+    parts = (__package__ or '').split('.')
+    if parts[0] == 'bl_ext':
+        return '.'.join(parts[:3])
+    return parts[0]
+
+
+def get_texture_search_paths(context):
+    return context.preferences.addons[get_addon_package()].preferences.texture_paths
+
+
 def create_texture_node(material, path_list, file, name = None):
     if name is None:
         name = file

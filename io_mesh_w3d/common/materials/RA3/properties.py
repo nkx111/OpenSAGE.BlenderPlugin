@@ -2,8 +2,8 @@ import bpy
 from bpy.props import *
 from bpy.types import Material, PropertyGroup
 from bpy_extras import node_shader_utils
-from io_mesh_w3d.common.utils.helpers import *
-from io_mesh_w3d.common.materials.RA3.parameter_map import *
+from ...utils.helpers import *
+from .parameter_map import *
 
 inherited_texture_keys = ["texture_0", "diffuse_texture"]
 def OnResetMaterialType(self:Material, context):
@@ -221,7 +221,7 @@ def OnTexture01Changed(self:Material, context):
     principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
     nodes = self.node_tree.nodes
     if (self.num_textures == 1 or self.texture_1 == "" or self.material_type in ["MuzzleFlash", "FXLightning", "Lightning", "FXProtonCollider"]) and self.texture_0 != "":
-        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
+        tex_node = create_texture_node(self, get_texture_search_paths(context), self.texture_0, name="tex_node")
         uv_tex_0 = create_node_no_repeative(nodes, "ShaderNodeUVMap", "uv_tex_0")
         uv_tex_0.uv_map = "UVMap"
         mapping_tex_0 = create_node_no_repeative(nodes, "ShaderNodeMapping", "mapping_tex_0")
@@ -280,8 +280,8 @@ def OnTexture01Changed(self:Material, context):
                 self.node_tree.links.new(color_mix_node_diffuse.outputs["Color"], principled.node_principled_bsdf.inputs["Emission"])        
     
     elif self.texture_0 != "" and self.texture_1 != "" and self.num_textures == 2:
-        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
-        tex_node1 = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_1, name="tex_node1")
+        tex_node = create_texture_node(self, get_texture_search_paths(context), self.texture_0, name="tex_node")
+        tex_node1 = create_texture_node(self, get_texture_search_paths(context), self.texture_1, name="tex_node1")
 
         texture_mix_node = create_node_no_repeative(nodes, "ShaderNodeMixRGB", "texture_mix_node")
         texture_mix_node.blend_type = 'MULTIPLY'
@@ -503,8 +503,8 @@ def OnDiffuseTextureChanged(self, context):
         principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
         nodes = self.node_tree.nodes
 
-        tex_diffuse = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture, "tex_diffuse")
-        tex_spec = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.spec_texture, "tex_spec")
+        tex_diffuse = create_texture_node(self, get_texture_search_paths(context), self.diffuse_texture, "tex_diffuse")
+        tex_spec = create_texture_node(self, get_texture_search_paths(context), self.spec_texture, "tex_spec")
         spec_sepa_node = create_node_no_repeative(nodes, "ShaderNodeSeparateColor", "spec_sepa_node")
         self.node_tree.links.new(tex_spec.outputs["Color"], spec_sepa_node.inputs["Color"])
 
@@ -556,7 +556,7 @@ def OnNrmTextureChanged(self:Material, context):
     if self.normal_texture != "":
         principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
         nodes = self.node_tree.nodes
-        tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.normal_texture, "tex_nrm")
+        tex_node = create_texture_node(self, get_texture_search_paths(context), self.normal_texture, "tex_nrm")
 
         separate_rgb = create_node_no_repeative(nodes, "ShaderNodeSeparateColor", "separate_rgb")
         self.node_tree.links.new(tex_node.outputs['Color'], separate_rgb.inputs['Color'])
@@ -610,7 +610,7 @@ def OnDamagedViewChanged(self:Material, context):
         principled = node_shader_utils.PrincipledBSDFWrapper(self, is_readonly=False)
         nodes = self.node_tree.nodes
         if self.preview_holes and self.damaged_texture!="":
-            damage_tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.damaged_texture)
+            damage_tex_node = create_texture_node(self, get_texture_search_paths(context), self.damaged_texture)
             damage_tex_uv_node = create_node_no_repeative(nodes, "ShaderNodeUVMap", "damage_tex_uv_node")
             damage_tex_uv_node.uv_map = "UVMap.001"
             self.node_tree.links.new(damage_tex_uv_node.outputs['UV'], damage_tex_node.inputs['Vector'])
@@ -621,7 +621,7 @@ def OnDamagedViewChanged(self:Material, context):
             if inputs.is_linked:
                 link = inputs.links[0]
                 self.node_tree.links.remove(link)
-            tex_diffuse = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture, "tex_diffuse")
+            tex_diffuse = create_texture_node(self, get_texture_search_paths(context), self.diffuse_texture, "tex_diffuse")
             self.node_tree.links.new(tex_diffuse.outputs["Alpha"], principled.node_principled_bsdf.inputs["Alpha"])
             self.blend_method = "CLIP"
 
@@ -755,14 +755,14 @@ def ScrollAndRotateUV_Muzzle(self, context):
     self.node_tree.links.new(combine_node_rotate.outputs['Vector'], mapping_tex_0_rotate.inputs['Rotation'])
     self.node_tree.links.new(mapping_tex_0.outputs['Vector'], mapping_tex_0_rotate.inputs['Vector'])
 
-    tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
+    tex_node = create_texture_node(self, get_texture_search_paths(context), self.texture_0, name="tex_node")
     self.node_tree.links.new(mapping_tex_0_rotate.outputs['Vector'], tex_node.inputs['Vector'])
 
 def UnScrollAndRotateUV_Muzzle(self, context):
     nodes = self.node_tree.nodes
     mapping_tex_0 = create_node_no_repeative(nodes, "ShaderNodeMapping", "mapping_tex_0")
     mapping_tex_0.inputs["Location"].default_value = (0, 0, 0)
-    tex_node = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_0, name="tex_node")
+    tex_node = create_texture_node(self, get_texture_search_paths(context), self.texture_0, name="tex_node")
     self.node_tree.links.new(mapping_tex_0.outputs['Vector'], tex_node.inputs['Vector'])
 
 
@@ -784,11 +784,11 @@ def ScrollAndRotateUV_Tread(self, context):
     self.node_tree.links.new(value_node_scroll.outputs['Value'], combine_node_scroll.inputs['X'])
     self.node_tree.links.new(combine_node_scroll.outputs['Vector'], mapping_tread.inputs['Location'])
 
-    tex_diffuse = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture, "tex_diffuse")
+    tex_diffuse = create_texture_node(self, get_texture_search_paths(context), self.diffuse_texture, "tex_diffuse")
     self.node_tree.links.new(mapping_tread.outputs['Vector'], tex_diffuse.inputs['Vector'])
-    tex_spec = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture, "tex_spec")
+    tex_spec = create_texture_node(self, get_texture_search_paths(context), self.diffuse_texture, "tex_spec")
     self.node_tree.links.new(mapping_tread.outputs['Vector'], tex_spec.inputs['Vector'])    
-    tex_nrm = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.diffuse_texture, "tex_nrm")
+    tex_nrm = create_texture_node(self, get_texture_search_paths(context), self.diffuse_texture, "tex_nrm")
     self.node_tree.links.new(mapping_tread.outputs['Vector'], tex_nrm.inputs['Vector'])
 
 def UnScrollAndRotateUV_Tread(self, context):
@@ -818,7 +818,7 @@ def ScrollAndRotateUV_Lightning(self, context):
     mapping_tex_nrm.inputs["Rotation"].default_value = (0, 0, self.disp_angle * 0.017453)
     mapping_tex_nrm.inputs["Scale"].default_value = (self.disp_scalar, self.disp_scalar, 1)
 
-    tex_node_nrm = create_texture_node(self, context.preferences.addons["io_mesh_w3d"].preferences.texture_paths, self.texture_1, name="tex_node_nrm")
+    tex_node_nrm = create_texture_node(self, get_texture_search_paths(context), self.texture_1, name="tex_node_nrm")
     self.node_tree.links.new(mapping_tex_nrm.outputs['Vector'], tex_node_nrm.inputs['Vector'])
 
     sep_color_nrm = create_node_no_repeative(nodes, "ShaderNodeSeparateColor", "sep_color_nrm")

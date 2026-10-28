@@ -560,7 +560,7 @@ CLASSES = (
 # the bundled updater would overwrite the add-on behind Blender's back,
 # extensions are updated through their repository instead
 UPDATER_CLASSES = (
-    DemoPreferences,
+    # DemoPreferences has been replaced by PreferencesPanel
     OBJECT_PT_DemoUpdaterPanel
 )
 

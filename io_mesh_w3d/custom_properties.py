@@ -5,7 +5,7 @@ import bpy
 from bpy.props import *
 from bpy.types import Material, PropertyGroup, Bone, Mesh
 from bpy_extras import node_shader_utils
-from io_mesh_w3d.common.utils.helpers import *
+from .common.utils.helpers import *
 
 
 ##########################################################################
@@ -153,7 +153,7 @@ Bone.visibility = FloatProperty(
 ##########################################################################
 
 try:
-    from io_mesh_w3d.selected_module import *
+    from .selected_module import *
 except:
     print("Error! Material Property Group not loaded")
 
