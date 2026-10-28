@@ -2,7 +2,7 @@
 # Written by Stephan Vedder and Michael Schnabel
 
 import bpy
-from bpy.types import Panel,Operator
+from bpy.types import Panel, Operator
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 from .utils import ReportHelper
 from .export_utils import save_data
@@ -158,7 +158,7 @@ class ExportW3D(bpy.types.Operator, ExportHelper, ReportHelper):
         if self.file_format == 'W3X':
             self.draw_individual_files()
 
-        #if self.file_format == 'W3X' and 'M' in self.export_mode:
+        # if self.file_format == 'W3X' and 'M' in self.export_mode:
             self.draw_create_texture_xmls()
 
         if self.file_format == 'W3D' and 'M' in self.export_mode:
@@ -302,8 +302,8 @@ class MATERIAL_PROPERTIES_PANEL_PT_w3d(Panel):
         col.prop(mat, 'technique')
 
         name, material_map = get_material_parameter_map(mat.material_type)
-        for key, value in material_map.items(): # internal functions
-            if "__" in key: 
+        for key, value in material_map.items():  # internal functions
+            if "__" in key:
                 col = layout.column()
                 col.prop(mat, value)
 
@@ -311,9 +311,10 @@ class MATERIAL_PROPERTIES_PANEL_PT_w3d(Panel):
         box.label(text="Shader Parameters", icon='PREFERENCES')
         row = box.row()
         for key, value in material_map.items():
-            if not "__" in key: 
+            if "__" not in key:
                 col = row.column()
                 box.prop(mat, value)
+
 
 class TOOLS_PANEL_PT_w3d(bpy.types.Panel):
     bl_label = 'W3D Tools'
@@ -325,12 +326,8 @@ class TOOLS_PANEL_PT_w3d(bpy.types.Panel):
         self.layout.operator('scene.export_bone_volume_data', icon='BONE_DATA', text='Export Bone Volume Data')
 
 
-
-
-
-
 ##############################
-# 
+#
 #  Blender Add-on Preference Page
 #
 ##############################
@@ -342,19 +339,20 @@ class TexturePathItem(PropertyGroup):
         default="",
     )
 
+
 class Operator_AddTexturePath(Operator):
     bl_idname = "addonname.add_texture_path"
     bl_label = "Add Texture Path"
-    
+
     directory: StringProperty(
         subtype='DIR_PATH',
         default="",
     )
-    
+
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
-    
+
     def execute(self, context):
         if self.directory:
             prefs = context.preferences.addons[__name__].preferences
@@ -362,17 +360,19 @@ class Operator_AddTexturePath(Operator):
             new_path.name = self.directory
         return {'FINISHED'}
 
+
 class Operator_RemoveTexturePath(Operator):
     bl_idname = "addonname.remove_texture_path"
     bl_label = "Remove Texture Path"
-    
+
     index: IntProperty(default=0)
-    
+
     def execute(self, context):
         prefs = context.preferences.addons[__name__].preferences
         if len(prefs.texture_paths) > self.index:
             prefs.texture_paths.remove(self.index)
         return {'FINISHED'}
+
 
 class Operator_MessageBox(Operator):
     bl_idname = "wm.message_box"
@@ -391,6 +391,7 @@ class Operator_MessageBox(Operator):
     def draw(self, context):
         self.layout.label(text=self.message)
 
+
 class Operator_ImportMaterialProperties(Operator):
     bl_idname = "object.import_module"
     bl_label = "Import Selected Module"
@@ -401,11 +402,14 @@ class Operator_ImportMaterialProperties(Operator):
         preferences.import_selected_module(context)
         return {'FINISHED'}
 
+
 MATERIAL_MODULES = [
     ("RA3", "RA3 Material", "Import RA3 Material module"),
     ("CNC3", "CNC3 Material", "Import CNC3 Material module"),
     ("Generals", "Generals Material", "Import Generals Material module"),
 ]
+
+
 def set_selected_module(self, context):
     print(self.selected_module)
     current_file_path = os.path.abspath(__file__)
@@ -415,14 +419,14 @@ def set_selected_module(self, context):
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(f"from io_mesh_w3d.common.materials.{self.selected_module} import *\n")
         bpy.ops.wm.message_box(
-                'INVOKE_DEFAULT',
-                message=f'Using {self.selected_module} Material Group. Take effect at next launch!'
-            )
-    except:
+            'INVOKE_DEFAULT',
+            message=f'Using {self.selected_module} Material Group. Take effect at next launch!'
+        )
+    except BaseException:
         bpy.ops.wm.message_box(
-                'INVOKE_DEFAULT',
-                message=f"Error! Materal group unchanged! Check {file_path}"
-            )
+            'INVOKE_DEFAULT',
+            message=f"Error! Materal group unchanged! Check {file_path}"
+        )
 
 
 class OBJECT_PT_DemoUpdaterPanel(bpy.types.Panel):
@@ -467,11 +471,10 @@ class PreferencesPanel(bpy.types.AddonPreferences):
     )
 
     texture_paths: CollectionProperty(
-            type=TexturePathItem,
-            name="Texture Search Paths",
-            description="List of folders to search for texture files",
+        type=TexturePathItem,
+        name="Texture Search Paths",
+        description="List of folders to search for texture files",
     )
-    
 
     auto_check_update = bpy.props.BoolProperty(
         name='Auto-check for Update',
@@ -506,7 +509,6 @@ class PreferencesPanel(bpy.types.AddonPreferences):
         max=59
     )
 
-
     active_path_index: IntProperty(default=0)
 
     def draw(self, context):
@@ -521,18 +523,17 @@ class PreferencesPanel(bpy.types.AddonPreferences):
         row = box.row()
         col = row.column()
         col.template_list(
-            "UI_UL_list", 
-            "texture_paths_list",  
-            self, 
-            "texture_paths",  
-            self,  
-            "active_path_index", 
-            rows=4, 
+            "UI_UL_list",
+            "texture_paths_list",
+            self,
+            "texture_paths",
+            self,
+            "active_path_index",
+            rows=4,
         )
         col = row.column(align=True)
         col.operator("addonname.add_texture_path", icon='ADD', text="")
         col.operator("addonname.remove_texture_path", icon='REMOVE', text="").index = self.active_path_index
-
 
         #addon_updater_ops.update_settings_ui(self, context)
 
@@ -554,7 +555,7 @@ CLASSES = (
     Operator_MessageBox,
     Operator_ImportMaterialProperties,
     PreferencesPanel,
-    #OBJECT_PT_DemoUpdaterPanel
+    # OBJECT_PT_DemoUpdaterPanel
 )
 
 # the bundled updater would overwrite the add-on behind Blender's back,
