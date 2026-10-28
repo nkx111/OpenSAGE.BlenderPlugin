@@ -12,6 +12,18 @@ def save(context, export_settings, data_context):
     export_mode = export_settings['mode']
     context.info(f'export mode: {export_mode}')
 
+    if export_mode not in ['M', 'HM', 'HAM', 'A', 'H']:
+        context.error(f'unsupported export mode \'{export_mode}\', aborting export!')
+        return {'CANCELLED'}
+
+    if export_mode == 'H' and data_context.hierarchy is None:
+        context.error('scene does not contain an armature object, aborting export!')
+        return {'CANCELLED'}
+
+    if export_mode == 'A' and data_context.animation is None:
+        context.error('scene does not contain an animation, aborting export!')
+        return {'CANCELLED'}
+
     file = open(filepath, 'wb')
 
     if export_mode == 'M':
@@ -23,8 +35,9 @@ def save(context, export_settings, data_context):
         mesh.write(file)
 
     elif export_mode == 'HM' or export_mode == 'HAM':
-        if export_mode == 'HAM' \
-                or not export_settings['use_existing_skeleton']:
+        if data_context.hierarchy is None:
+            context.warning('Scene does not contain an armature object, exporting meshes only')
+        elif export_mode == 'HAM' or not export_settings['use_existing_skeleton']:
             data_context.hlod.header.hierarchy_name = data_context.container_name
             data_context.hierarchy.header.name = data_context.container_name
             data_context.hierarchy.write(file)
@@ -38,8 +51,9 @@ def save(context, export_settings, data_context):
         for mesh in data_context.meshes:
             mesh.write(file)
 
-        data_context.hlod.write(file)
-        if export_mode == 'HAM':
+        if data_context.hlod is not None:
+            data_context.hlod.write(file)
+        if export_mode == 'HAM' and data_context.animation is not None:
             data_context.animation.header.hierarchy_name = data_context.container_name
             data_context.animation.write(file)
 
@@ -49,9 +63,6 @@ def save(context, export_settings, data_context):
     elif export_mode == 'H':
         data_context.hierarchy.header.name = data_context.container_name.upper()
         data_context.hierarchy.write(file)
-    else:
-        context.error(f'unsupported export mode \'{export_mode}\', aborting export!')
-        return {'CANCELLED'}
 
     file.close()
     context.info('finished')

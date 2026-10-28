@@ -312,13 +312,13 @@ def create_node_no_repeative(nodes, type, name):
 
 def get_aa_box(vertices, matrix_local = Matrix.Identity(4)):
     minX = sys.float_info.max
-    maxX = sys.float_info.min
+    maxX = -sys.float_info.max
 
     minY = sys.float_info.max
-    maxY = sys.float_info.min
+    maxY = -sys.float_info.max
 
     minZ = sys.float_info.max
-    maxZ = sys.float_info.min
+    maxZ = -sys.float_info.max
 
     for vertex in vertices:
 

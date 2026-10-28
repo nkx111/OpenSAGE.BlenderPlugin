@@ -25,6 +25,9 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
         if mesh_object.data.object_type != 'MESH':
             continue    
 
+        if mesh_object.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+
         mesh_struct = W3DMesh()
         mesh_struct.header = MeshHeader(
             mesh_name=mesh_object.name,
@@ -164,7 +167,7 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
                     mesh_struct.bitangents.append((rotation @ rotation_self @ vertex.normal))
 
         if unskinned_vertices_error or overskinned_vertices_error:
-            return ([], [])
+            return []
 
         header.min_corner = Vector(
             (mesh_object.bound_box[0][0],
@@ -238,7 +241,7 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
             principled = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=True)
 
             if context.file_format == 'W3X' or (
-                    material.material_type == 'SHADER_MATERIAL' and not force_vertex_materials):
+                    material.material_type != 'VERTEX_MATERIAL' and not force_vertex_materials):
                 mat_pass.shader_material_ids = [i]
                 if i < len(tx_stages):
                     mat_pass.tx_coords = tx_stages[i].tx_coords[0]
@@ -347,7 +350,7 @@ def retrieve_meshes(context, hierarchy, rig, container_name, force_vertex_materi
     switch_to_pose(rig, 'POSE')
 
     if naming_error:
-        return [], []
+        return []
 
     return mesh_structs
 

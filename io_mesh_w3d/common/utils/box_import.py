@@ -9,10 +9,10 @@ from ...common.structs.collision_box import *
 def create_box(box, coll):
     x = box.extend[0] / 2.0
     y = box.extend[1] / 2.0
-    z = box.extend[2]
+    z = box.extend[2] / 2.0
 
     verts = [(x, y, z), (-x, y, z), (-x, -y, z), (x, -y, z),
-             (x, y, 0), (-x, y, 0), (-x, -y, 0), (x, -y, 0)]
+             (x, y, -z), (-x, y, -z), (-x, -y, -z), (x, -y, -z)]
     faces = [(0, 1, 2, 3), (4, 5, 6, 7), (0, 4, 5, 1),
              (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)]
 

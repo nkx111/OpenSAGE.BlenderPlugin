@@ -51,7 +51,7 @@ def get_used_textures_global_tree():
                 if node.type == 'TEX_IMAGE': 
                     if node.image and node.image.name != "IMG_NOT_FOUND":
                         abs_path = bpy.path.abspath(node.image.filepath)
-                        if os.path.exists(abs_path):
+                        if os.path.exists(abs_path) and (node.image.name, abs_path) not in used_images:
                             used_images.append((node.image.name, abs_path))
     return used_images
 

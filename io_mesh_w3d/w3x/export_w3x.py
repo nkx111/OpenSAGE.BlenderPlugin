@@ -19,12 +19,16 @@ def save(context, export_settings, data_context):
     export_mode = export_settings['mode']
     # context.info(f'export mode: {export_mode}')
 
+    if export_mode not in ['M', 'HM', 'HAM', 'A', 'H']:
+        context.error(f'unsupported export mode: {export_mode}, aborting export!')
+        return {'CANCELLED'}
+
     root = create_root()
     # includes = create_node(root, 'Includes')
 
     # directory = os.path.dirname(context.filepath) + os.path.sep
 
-    if 'H' in export_mode and data_context.hierarchy:
+    if 'H' in export_mode and data_context.hierarchy and not export_settings['use_existing_skeleton']:
         if export_settings['individual_files']:
             path = filepath_pure + "_SKL" + context.filename_ext
             context.info('Saving file :' + path)
